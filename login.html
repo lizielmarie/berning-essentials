@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berning Store — Staff & Management Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #15803d;
+            --primary-hover: #166534;
+            --primary-light: #dcfce7;
+            --surface: #ffffff;
+            --bg: #f8fafc;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            --radius: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at 10% 20%, #ecfdf5 0%, #f8fafc 90%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .brand-title {
+            font-size: 1.875rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+
+        .brand-title span {
+            color: var(--primary);
+        }
+
+        .brand-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.35rem;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2.25rem 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            color: #94a3b8;
+            font-size: 0.95rem;
+            pointer-events: none;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.6rem;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: var(--text);
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.15);
+        }
+
+        .toggle-pass-btn {
+            position: absolute;
+            right: 0.85rem;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 0.95rem;
+            padding: 0.25rem;
+        }
+
+        .toggle-pass-btn:hover {
+            color: var(--text);
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-bottom: 1.25rem;
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-danger {
+            background: var(--danger-light);
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: var(--primary-light);
+            color: #14532d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.85rem 1.25rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(21, 128, 61, 0.25);
+        }
+
+        .btn-login:hover:not(:disabled) {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(21, 128, 61, 0.35);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .footer-links {
+            margin-top: 1.75rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .footer-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .role-hint {
+            margin-top: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 1px dashed var(--border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="brand-header">
+            <div class="brand-badge">
+                <i class="fa-solid fa-shield-halved"></i> Unified Login Portal
+            </div>
+            <h1 class="brand-title">
+                <i class="fa-solid fa-store" style="color: var(--primary);"></i> Berning <span>Store</span>
+            </h1>
+            <p class="brand-subtitle">Sign in to access Owner Management or Cashier POS</p>
+        </div>
+
+        <div class="login-card">
+            <!-- Initial Setup Notice (Shown if no owner exists) -->
+            <div id="noOwnerNotice"
+                style="display:none; background:#fef3c7; border:1px solid #fde68a; color:#92400e; padding:12px 14px; border-radius:10px; margin-bottom:1.25rem; font-size:0.875rem;">
+                <div style="display:flex; align-items:flex-start; gap:8px; margin-bottom:8px;">
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-top:2px;"></i>
+                    <div><strong>Initial Setup Required:</strong> No store owner has been registered yet. Please create
+                        the store
+                        owner account.</div>
+                </div>
+                <a href="../register/"
+                    style="display:block; text-align:center; background:#15803d; color:#fff; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:700; font-size:13px;">
+                    <i class="fa-solid fa-user-shield"></i> Register Store Owner Now
+                </a>
+            </div>
+
+            <div id="alertBox" class="alert alert-danger" role="alert">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="alertMsg">Invalid credentials.</span>
+            </div>
+
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username or Email Address</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user input-icon"></i>
+                        <input type="text" id="username" class="form-input" placeholder="Enter your username or email"
+                            required autofocus>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock input-icon"></i>
+                        <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+                        <button type="button" class="toggle-pass-btn" id="togglePasswordBtn" title="Show/Hide Password">
+                            <i class="fa-solid fa-eye" id="togglePassIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login" id="submitBtn">
+                    <span>Sign In</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+
+        </div>
+
+        <div class="footer-links">
+            <a href="../register/" id="ownerRegLink"><i class="fa-solid fa-user-shield"></i> First-Time Owner
+                Setup</a>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submitBtn');
+        const alertBox = document.getElementById('alertBox');
+        const alertMsg = document.getElementById('alertMsg');
+        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+        const togglePassIcon = document.getElementById('togglePassIcon');
+
+        function showAlert(msg, isSuccess = false) {
+            alertBox.className = 'alert ' + (isSuccess ? 'alert-success' : 'alert-danger');
+            alertMsg.textContent = msg;
+            alertBox.style.display = 'flex';
+        }
+
+        function hideAlert() {
+            alertBox.style.display = 'none';
+        }
+
+        // Toggle password visibility
+        togglePasswordBtn.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            togglePassIcon.className = isPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        });
+
+        // Check if already authenticated and check owner registration status
+        (async function initLoginScreen() {
+            // Check query params for registration success or error notice
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('registered') === '1') {
+                showAlert('Owner account registered successfully! Please log in below.', true);
+            } else if (urlParams.get('error') === 'access_denied') {
+                showAlert('Access Denied: Unauthorized account. Only Owner and Cashier roles are permitted.');
+            }
+
+            // Check if user already has an active session
+            try {
+                const token = localStorage.getItem('bs_session_token');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                const res = await fetch('api/login.php?action=check', { headers, credentials: 'include' });
+                const data = await res.json();
+                if (data && data.authenticated && data.user) {
+                    if (data.token) {
+                        localStorage.setItem('bs_session_token', data.token);
+                    }
+                    localStorage.setItem('bs_current_user', JSON.stringify(data.user));
+                    const userRole = String(data.user.role || '').trim().toLowerCase();
+                    if (userRole === 'owner') {
+                        window.location.replace('../admin/'); // admin.html clean URL
+                        return;
+                    } else if (userRole === 'cashier' || userRole === 'store attendant') {
+                        window.location.replace('../cashier/'); // cashier.html clean URL
+                        return;
+                    } else {
+                        localStorage.removeItem('bs_session_token');
+                        localStorage.removeItem('bs_current_user');
+                    }
+                }
+            } catch (err) {
+                // Continue to show login form
+            }
+
+            // Check if store has any registered owner
+            try {
+                const statusRes = await fetch('api/owner_register.php?action=status');
+                const statusData = await statusRes.json();
+                if (statusData.success && !statusData.owner_exists) {
+                    const notice = document.getElementById('noOwnerNotice');
+                    if (notice) notice.style.display = 'block';
+                }
+            } catch (err) {
+                // Silently continue
+            }
+        })();
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideAlert();
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username || !password) {
+                showAlert('Please enter both your username and password.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Authenticating...</span>';
+
+            try {
+                const res = await fetch('api/login.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (data.success && data.token) {
+                    const userRole = String((data.user && data.user.role) || '').trim().toLowerCase();
+                    if (userRole === 'owner') {
+                        showAlert('Login successful! Redirecting to Owner Management Portal...', true);
+                        localStorage.setItem('bs_session_token', data.token);
+                        localStorage.setItem('bs_current_user', JSON.stringify(data.user));
+                        setTimeout(() => {
+                            window.location.replace('../admin/'); // admin.html clean URL
+                        }, 500);
+                        return;
+                    } else if (userRole === 'cashier' || userRole === 'store attendant') {
+                        showAlert('Login successful! Redirecting to Cashier Point-of-Sale (POS)...', true);
+                        localStorage.setItem('bs_session_token', data.token);
+                        localStorage.setItem('bs_current_user', JSON.stringify(data.user));
+                        setTimeout(() => {
+                            window.location.replace('../cashier/'); // cashier.html clean URL
+                        }, 500);
+                        return;
+                    } else {
+                        showAlert('Access Denied: Unauthorized account. Only Owner and Cashier roles are permitted.');
+                        localStorage.removeItem('bs_session_token');
+                        localStorage.removeItem('bs_current_user');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>';
+                        return;
+                    }
+                } else {
+                    showAlert(data.message || 'Invalid username or password.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>';
+                }
+            } catch (err) {
+                showAlert('Network or server error. Please ensure Apache and MySQL are running.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<span>Sign In</span> <i class="fa-solid fa-arrow-right"></i>';
+            }
+        });
+    </script>
+</body>
+
+</html>

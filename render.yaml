@@ -1,0 +1,31 @@
+# ==============================================================================
+# BERNING ESSENTIALS — RENDER BLUEPRINT (render.yaml)
+# Automated Infrastructure Configuration for Render Web Services
+# ==============================================================================
+
+services:
+  - type: web
+    name: berning-essentials
+    env: docker
+    plan: free
+    region: singapore # Matches TiDB Cloud ap-southeast-1 region for ultra-low latency
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/owner_register.php?action=status
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DB_HOST
+        value: gateway01.ap-southeast-1.prod.aws.tidbcloud.com
+      - key: DB_PORT
+        value: "4000"
+      - key: DB_NAME
+        value: berning_essentials
+      - key: DB_USER
+        sync: false # Set securely in Render Dashboard
+      - key: DB_PASS
+        sync: false # Set securely in Render Dashboard
+      - key: DB_SSL_CA_PATH
+        value: /etc/secrets/isrgrootx1.pem
+    secretFiles:
+      - key: isrgrootx1.pem
+        mountPath: /etc/secrets/isrgrootx1.pem

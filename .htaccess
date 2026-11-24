@@ -1,0 +1,136 @@
+# ==============================================================================
+# BERNING ESSENTIALS — APACHE PRODUCTION CONFIGURATION (.htaccess)
+# Designed for Render Web Services & Local Apache (XAMPP)
+# ==============================================================================
+
+# 1. Directory Index & URL Rewriting
+DirectoryIndex index.php admin_login.html
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Forward Authorization Header for FastCGI / PHP-FPM
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Legacy frontend directory backward compatibility redirect
+    RewriteRule ^frontend/(.*)$ /$1 [R=301,L]
+
+    # ----------------------------------------------------------------------
+    # Clean Extensionless URLs: External 301 Redirects from File URLs
+    # Uses %{REQUEST_URI} prefix capture to avoid physical filesystem path leaks
+    # ----------------------------------------------------------------------
+    # Redirect cashier.html -> cashier/
+    RewriteCond %{THE_REQUEST} \s/+(?:[^/]+/)*cashier\.html[?\s] [NC]
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:cashier\.html)$ [NC]
+    RewriteRule ^cashier\.html$ %1cashier/ [R=301,L,QSA]
+
+    # Redirect admin.html & admin.php -> admin/
+    RewriteCond %{THE_REQUEST} \s/+(?:[^/]+/)*admin\.(html|php)[?\s] [NC]
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:admin\.(?:html|php))$ [NC]
+    RewriteRule ^admin\.(html|php)$ %1admin/ [R=301,L,QSA]
+
+    # Redirect admin_login.html & login.html -> login/
+    RewriteCond %{THE_REQUEST} \s/+(?:[^/]+/)*(admin_login|login)\.html[?\s] [NC]
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:(?:admin_login|login)\.html)$ [NC]
+    RewriteRule ^(admin_login|login)\.html$ %1login/ [R=301,L,QSA]
+
+    # Redirect owner_register.html -> register/
+    RewriteCond %{THE_REQUEST} \s/+(?:[^/]+/)*owner_register\.html[?\s] [NC]
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:owner_register\.html)$ [NC]
+    RewriteRule ^owner_register\.html$ %1register/ [R=301,L,QSA]
+
+    # ----------------------------------------------------------------------
+    # Enforce Trailing Slash on Directory-Style Page URLs
+    # ----------------------------------------------------------------------
+    RewriteCond %{REQUEST_URI} ^(.*?)(cashier|admin|login|register)$ [NC]
+    RewriteRule ^(cashier|admin|login|register)$ %1%2/ [R=301,L,QSA]
+
+    # ----------------------------------------------------------------------
+    # Cross-Directory Navigation Normalization
+    # Fixes nested relative page links if called from a sub-directory
+    # ----------------------------------------------------------------------
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:cashier|admin|login|register)/(cashier|admin|login|register)/?$ [NC]
+    RewriteRule ^(?:cashier|admin|login|register)/(?:cashier|admin|login|register)/?$ %1%2/ [R=301,L,QSA]
+
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:cashier|admin|login|register)/(?:admin_login|login)\.html$ [NC]
+    RewriteRule ^(?:cashier|admin|login|register)/(?:admin_login|login)\.html$ %1login/ [R=301,L,QSA]
+
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:cashier|admin|login|register)/cashier\.html$ [NC]
+    RewriteRule ^(?:cashier|admin|login|register)/cashier\.html$ %1cashier/ [R=301,L,QSA]
+
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:cashier|admin|login|register)/admin\.(?:html|php)$ [NC]
+    RewriteRule ^(?:cashier|admin|login|register)/admin\.(?:html|php)$ %1admin/ [R=301,L,QSA]
+
+    RewriteCond %{REQUEST_URI} ^(.*?)(?:cashier|admin|login|register)/owner_register\.html$ [NC]
+    RewriteRule ^(?:cashier|admin|login|register)/owner_register\.html$ %1register/ [R=301,L,QSA]
+
+    # ----------------------------------------------------------------------
+    # Sub-Resource Rewrites for Clean Directory URLs
+    # Maps relative calls from /cashier/, /admin/, /login/, /register/
+    # to the actual root assets and APIs without redirects
+    # ----------------------------------------------------------------------
+    RewriteRule ^(?:cashier|admin|login|register)/(api/.*)$ $1 [L,QSA]
+    RewriteRule ^(?:cashier|admin|login|register)/(assets/.*)$ $1 [L,QSA]
+    RewriteRule ^(?:cashier|admin|login|register)/(css/.*)$ $1 [L,QSA]
+    RewriteRule ^(?:cashier|admin|login|register)/(js/.*)$ $1 [L,QSA]
+
+    # ----------------------------------------------------------------------
+    # Internal Rewrites: Clean URLs -> Actual Handlers
+    # ----------------------------------------------------------------------
+    RewriteRule ^cashier/?$ cashier.html [L]
+    RewriteRule ^admin/?$ admin.php [L]
+    RewriteRule ^login/?$ admin_login.html [L]
+    RewriteRule ^register/?$ owner_register.html [L]
+</IfModule>
+
+# 2. Disable directory browsing for security
+Options -Indexes
+
+# 3. Default Charset
+AddDefaultCharset UTF-8
+
+# 4. Protect sensitive database files and configurations
+<FilesMatch "(^#.*#|\.(sql|bak|config|env|log|md|sh|toml)|config\.php|config\.local\.php)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# 5. Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# 6. Enable MIME types for web assets
+<IfModule mod_mime.c>
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType application/json .json
+    AddType image/svg+xml .svg
+    AddType image/png .png
+    AddType image/jpeg .jpg .jpeg
+</IfModule>
+
+# 7. Custom Error Documents (Prevent generic hosting ads/error pages)
+ErrorDocument 403 /admin_login.html
+ErrorDocument 404 /index.php
+
+# 8. Protect test suites and migration scripts from public internet execution
+<FilesMatch "^(test_.*\.php|run_migration.*\.php|setup_db\.php)$">
+    <IfModule mod_authz_core.c>
+        Require local
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+        Allow from 127.0.0.1 ::1
+    </IfModule>
+</FilesMatch>

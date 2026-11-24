@@ -1,0 +1,4543 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Berning Store | Cashier POS Terminal</title>
+  <meta name="description"
+    content="Berning Store internal Point-of-Sale cashier terminal — login, registration, and checkout in one file.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* Berning.Store POS — single-file build (login + register + cashier) */
+
+    :root {
+      --bg: #F6F4EC;
+      --surface: #FFFFFF;
+      --surface-alt: #EEF3EA;
+      --ink: #1E2A20;
+      --ink-soft: #64715F;
+      --ink-faint: #94A090;
+
+      --brand: #2F6B45;
+      --brand-dark: #1F4A30;
+      --brand-light: #E7F1E8;
+
+      --pos-accent: #D98F3B;
+      --pos-accent-dark: #B9722A;
+
+      --danger: #C0453A;
+      --danger-light: #F8E4E1;
+
+      --border: #E0E4DA;
+      --border-strong: #C9D0C2;
+
+      --shadow-sm: 0 1px 2px rgba(30, 42, 32, .06);
+      --shadow-md: 0 10px 30px rgba(30, 42, 32, .10);
+      --shadow-lg: 0 24px 60px rgba(20, 30, 20, .16);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    input,
+    select {
+      font-family: inherit;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    /* Screen switching */
+    .screen {
+      display: none;
+    }
+
+    #view-login.active,
+    #view-register.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    #view-pos.active {
+      display: block;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Auth screens */
+
+    .auth-shell {
+      width: 100%;
+      max-width: 960px;
+      min-height: 600px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+
+    .auth-brand-panel {
+      background: linear-gradient(160deg, var(--brand-dark) 0%, var(--brand) 100%);
+      color: #fff;
+      padding: 48px 42px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-brand-panel::before {
+      content: "";
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .10);
+      top: -120px;
+      right: -120px;
+    }
+
+    .auth-brand-panel::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, .08);
+      bottom: -80px;
+      left: -60px;
+    }
+
+    .auth-brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      z-index: 1;
+    }
+
+    .auth-brand-mark i,
+    .auth-brand-mark .dot {
+      color: var(--pos-accent);
+    }
+
+    .auth-brand-copy {
+      margin-top: auto;
+      z-index: 1;
+    }
+
+    .auth-brand-copy h1 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 30px;
+      line-height: 1.25;
+      margin: 0 0 14px;
+      max-width: 320px;
+    }
+
+    .auth-brand-copy p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, .78);
+      max-width: 300px;
+      margin: 0 0 24px;
+    }
+
+    .auth-brand-features {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .auth-brand-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, .85);
+    }
+
+    .auth-brand-features i {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--pos-accent);
+      flex-shrink: 0;
+    }
+
+    .auth-form-panel {
+      padding: 46px 44px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .auth-form-head {
+      margin-bottom: 24px;
+    }
+
+    .auth-form-head h2 {
+      font-family: var(--font-display);
+      font-size: 23px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .auth-form-head p {
+      font-size: 13px;
+      color: var(--ink-soft);
+      margin: 0;
+    }
+
+    .auth-form-head p a,
+    .auth-link {
+      color: var(--brand);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .auth-form-head p a:hover,
+    .auth-link:hover {
+      text-decoration: underline;
+    }
+
+    .auth-field {
+      margin-bottom: 15px;
+    }
+
+    .auth-field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .auth-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      margin-bottom: 6px;
+    }
+
+    .auth-input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface-alt);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 13px;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .auth-input-group:focus-within {
+      border-color: var(--brand);
+      background: #fff;
+    }
+
+    .auth-input-group.error {
+      border-color: var(--danger);
+    }
+
+    .auth-input-group i {
+      color: var(--ink-faint);
+      font-size: 13px;
+      width: 14px;
+      text-align: center;
+    }
+
+    .auth-input-group input,
+    .auth-input-group select {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13.5px;
+      color: var(--ink);
+    }
+
+    .auth-input-group select {
+      cursor: pointer;
+    }
+
+    .auth-toggle-visibility {
+      background: none;
+      border: none;
+      color: var(--ink-faint);
+      font-size: 13px;
+      padding: 2px;
+    }
+
+    .auth-toggle-visibility:hover {
+      color: var(--ink-soft);
+    }
+
+    .auth-field-error {
+      font-size: 11px;
+      color: var(--danger);
+      margin-top: 5px;
+      min-height: 13px;
+    }
+
+    .auth-row-between {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      font-size: 12px;
+    }
+
+    .auth-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .auth-checkbox input {
+      accent-color: var(--brand);
+      width: 15px;
+      height: 15px;
+    }
+
+    .auth-submit-btn {
+      width: 100%;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 13px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background .15s ease, transform .1s ease;
+    }
+
+    .auth-submit-btn:hover {
+      background: var(--brand-dark);
+    }
+
+    .auth-submit-btn:active {
+      transform: scale(.99);
+    }
+
+    .auth-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px 13px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .auth-banner.error {
+      background: var(--danger-light);
+      color: var(--danger);
+      border: 1px solid rgba(192, 69, 58, 0.2);
+    }
+
+    .auth-banner.success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+
+    .auth-banner.hidden {
+      display: none;
+    }
+
+    .auth-demo-hint {
+      margin-top: 16px;
+      padding: 11px 13px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-alt);
+      font-size: 11px;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    .auth-demo-hint b {
+      color: var(--ink);
+    }
+
+    .password-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .password-strength span {
+      height: 4px;
+      flex: 1;
+      border-radius: 2px;
+      background: var(--border);
+    }
+
+    .password-strength.weak span:nth-child(1) {
+      background: var(--danger);
+    }
+
+    .password-strength.medium span:nth-child(1),
+    .password-strength.medium span:nth-child(2) {
+      background: var(--pos-accent);
+    }
+
+    .password-strength.strong span {
+      background: var(--brand);
+    }
+
+    @media (max-width: 800px) {
+      .auth-shell {
+        grid-template-columns: 1fr;
+        max-width: 440px;
+        min-height: auto;
+      }
+
+      .auth-brand-panel {
+        display: none;
+      }
+
+      .auth-form-panel {
+        padding: 38px 28px;
+      }
+    }
+
+    /* POS screen */
+
+
+    .pos-header {
+      height: 68px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 0 22px;
+      background: var(--brand-dark);
+      color: #fff;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      z-index: 5;
+    }
+
+    .pos-header-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 19px;
+      white-space: nowrap;
+    }
+
+    .pos-header-brand i,
+    .pos-header-brand .dot {
+      color: var(--pos-accent);
+    }
+
+    .pos-badge {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 11px;
+      background: rgba(255, 255, 255, .12);
+      padding: 4px 10px;
+      border-radius: 100px;
+      margin-left: 4px;
+    }
+
+    .pos-header-center {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .pos-search-wrap {
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+    }
+
+    .pos-search-wrap:focus-within {
+      background: rgba(255, 255, 255, .18);
+      border-color: var(--pos-accent);
+    }
+
+    .pos-search-wrap i {
+      color: rgba(255, 255, 255, .6);
+      font-size: 13px;
+    }
+
+    .pos-search-wrap input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #fff;
+      font-size: 13.5px;
+    }
+
+    .pos-search-wrap input::placeholder {
+      color: rgba(255, 255, 255, .5);
+    }
+
+    .pos-search-wrap kbd {
+      font-size: 10px;
+      background: rgba(255, 255, 255, .14);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: rgba(255, 255, 255, .65);
+    }
+
+    .pos-barcode-wrap {
+      position: relative;
+    }
+
+    .pos-barcode-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--pos-accent);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      min-width: 230px;
+      transition: box-shadow .15s ease;
+    }
+
+    .pos-barcode-input-group.focused,
+    .pos-barcode-input-group:focus-within {
+      box-shadow: 0 0 0 3px rgba(217, 143, 59, .35);
+    }
+
+    .pos-barcode-input-group i {
+      color: var(--brand-dark);
+      font-size: 14px;
+    }
+
+    .pos-barcode-input-group input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--brand-dark);
+      font-weight: 600;
+      font-size: 13.5px;
+    }
+
+    .pos-barcode-input-group input::placeholder {
+      color: rgba(31, 74, 48, .55);
+    }
+
+    .barcode-hint {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(31, 74, 48, .55);
+    }
+
+    .barcode-status {
+      position: absolute;
+      top: 110%;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 0;
+      border-radius: 6px;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity .15s ease, transform .15s ease;
+      pointer-events: none;
+    }
+
+    .barcode-status.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .barcode-status.ok {
+      background: rgba(60, 122, 84, .95);
+      color: #fff;
+    }
+
+    .barcode-status.error {
+      background: rgba(192, 69, 58, .95);
+      color: #fff;
+    }
+
+    .pos-header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      white-space: nowrap;
+    }
+
+    .pos-clock {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 14.5px;
+      min-width: 84px;
+      text-align: right;
+      color: rgba(255, 255, 255, .85);
+    }
+
+    .pos-cashier-info {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding-left: 14px;
+      border-left: 1px solid rgba(255, 255, 255, .15);
+    }
+
+    .cashier-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--pos-accent);
+      color: var(--brand-dark);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .cashier-name {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .cashier-shift {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .6);
+      line-height: 1.2;
+    }
+
+    .pos-exit-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .14);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    .pos-exit-btn:hover {
+      background: rgba(255, 255, 255, .2);
+    }
+
+    .pos-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      height: calc(100vh - 68px);
+    }
+
+    .pos-products-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: 18px 20px 0;
+      overflow: hidden;
+    }
+
+    .pos-category-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    .pos-cat-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink-soft);
+      font-weight: 600;
+      font-size: 13px;
+      padding: 9px 16px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .pos-cat-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
+    .pos-cat-btn.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+    }
+
+    .pos-products-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 14px;
+      overflow-y: auto;
+      padding: 4px 4px 24px;
+      align-content: start;
+    }
+
+    .pos-product-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      text-align: left;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      position: relative;
+    }
+
+    .pos-product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--brand);
+    }
+
+    .pos-product-card.out-of-stock {
+      opacity: .5;
+      pointer-events: none;
+    }
+
+    .product-card-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-sm);
+      background: var(--brand-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .product-card-name {
+      font-weight: 700;
+      font-size: 13.5px;
+      line-height: 1.3;
+    }
+
+    .product-card-cat {
+      font-size: 10.5px;
+      color: var(--ink-faint);
+      font-weight: 600;
+    }
+
+    .product-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 6px;
+    }
+
+    .product-card-price {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--brand-dark);
+      font-size: 14.5px;
+    }
+
+    .product-card-add {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--brand);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .product-card-stock-flag {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 9.5px;
+      font-weight: 700;
+      background: var(--danger-light);
+      color: var(--danger);
+      padding: 3px 7px;
+      border-radius: 100px;
+    }
+
+    .pos-no-results {
+      grid-column: 1/-1;
+      text-align: center;
+      color: var(--ink-faint);
+      padding: 60px 0;
+      font-size: 14px;
+    }
+
+    .pos-order-panel {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 18px 18px 20px;
+      overflow: hidden;
+    }
+
+    .pos-order-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .order-header-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--brand-dark);
+    }
+
+    .order-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .order-id-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      background: var(--surface-alt);
+      padding: 5px 10px;
+      border-radius: 100px;
+    }
+
+    .order-void-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--danger);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .order-void-btn:hover {
+      background: var(--danger-light);
+    }
+
+    .pos-order-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pos-empty-order {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-faint);
+      text-align: center;
+      gap: 6px;
+    }
+
+    .pos-empty-order i {
+      font-size: 32px;
+      margin-bottom: 6px;
+      color: var(--border-strong);
+    }
+
+    .pos-empty-order p {
+      margin: 0;
+      font-weight: 700;
+      color: var(--ink-soft);
+      font-size: 14px;
+    }
+
+    .pos-empty-order span {
+      font-size: 12px;
+    }
+
+    .order-line-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: var(--surface-alt);
+      border-radius: var(--radius-md);
+    }
+
+    .line-item-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .line-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .line-item-name {
+      font-size: 12.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .line-item-price {
+      font-size: 11.5px;
+      color: var(--ink-faint);
+    }
+
+    .line-item-qty {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .qty-btn {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      background: #fff;
+      color: var(--ink);
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .qty-btn:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
+    .qty-value {
+      font-weight: 700;
+      font-size: 12.5px;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    .line-item-total {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 12.5px;
+      color: var(--brand-dark);
+      min-width: 58px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .line-item-remove {
+      background: none;
+      border: none;
+      color: var(--ink-faint);
+      font-size: 13px;
+      padding: 4px;
+      flex-shrink: 0;
+    }
+
+    .line-item-remove:hover {
+      color: var(--danger);
+    }
+
+    .pos-order-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    .pos-discount-row {
+      flex-shrink: 0;
+      padding: 4px 0 10px;
+    }
+
+    .pos-promo-input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+    }
+
+    .pos-promo-input-group i {
+      color: var(--ink-faint);
+      font-size: 12px;
+    }
+
+    .pos-promo-input-group input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 12.5px;
+      color: var(--ink);
+      text-transform: uppercase;
+    }
+
+    .pos-promo-input-group input::placeholder {
+      text-transform: none;
+      color: var(--ink-faint);
+    }
+
+    .pos-promo-input-group button {
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+
+    .pos-promo-input-group button:hover {
+      background: var(--brand-dark);
+    }
+
+    .pos-promo-status {
+      font-size: 11.5px;
+      font-weight: 600;
+      margin-top: 6px;
+      min-height: 14px;
+    }
+
+    .pos-promo-status.ok {
+      color: var(--brand);
+    }
+
+    .pos-promo-status.error {
+      color: var(--danger);
+    }
+
+    .pos-totals {
+      flex-shrink: 0;
+      padding: 4px 0 14px;
+    }
+
+    .totals-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--ink-soft);
+      padding: 5px 0;
+    }
+
+    .totals-row.discount-row {
+      font-weight: 700;
+    }
+
+    .totals-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 6px 0;
+    }
+
+    .total-final-row {
+      font-family: var(--font-display);
+      font-size: 19px;
+      font-weight: 800;
+      color: var(--brand-dark);
+    }
+
+    .pos-payment-methods {
+      flex-shrink: 0;
+      padding-bottom: 12px;
+    }
+
+    .payment-method-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      margin-bottom: 8px;
+    }
+
+    .payment-method-btns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .pay-method-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface-alt);
+      border: 1.5px solid transparent;
+      color: var(--ink-soft);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 10px 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    .pay-method-btn i {
+      font-size: 15px;
+    }
+
+    .pay-method-btn:hover {
+      border-color: var(--border-strong);
+    }
+
+    .pay-method-btn.active {
+      background: var(--brand-light);
+      border-color: var(--brand);
+      color: var(--brand-dark);
+    }
+
+    .pos-cash-tender-section {
+      flex-shrink: 0;
+      padding-bottom: 14px;
+    }
+
+    .pos-cash-tender-section.hidden {
+      display: none;
+    }
+
+    .tender-label {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ink-soft);
+      margin-bottom: 7px;
+    }
+
+    .tender-input-group {
+      display: flex;
+      align-items: center;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      margin-bottom: 9px;
+    }
+
+    .tender-currency {
+      font-weight: 700;
+      color: var(--ink-soft);
+      margin-right: 6px;
+    }
+
+    .tender-input-group input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .quick-bills {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .quick-bills button {
+      background: #fff;
+      border: 1px solid var(--border-strong);
+      color: var(--ink-soft);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 2px;
+      border-radius: 6px;
+    }
+
+    .quick-bills button:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
+    .change-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--brand-light);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+    }
+
+    .change-display span:first-child {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
+    .change-amount {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--brand-dark);
+    }
+
+    .change-amount.insufficient {
+      color: var(--danger);
+    }
+
+    .pos-charge-btn {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      background: var(--pos-accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .pos-charge-btn:hover:not(:disabled) {
+      background: var(--pos-accent-dark);
+    }
+
+    .pos-charge-btn:disabled {
+      background: var(--border-strong);
+      color: #fff;
+      cursor: not-allowed;
+    }
+
+    .pos-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 28, 20, .5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(2px);
+    }
+
+    .pos-modal-overlay.show {
+      display: flex;
+    }
+
+    .pos-modal {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      width: 100%;
+      max-width: 400px;
+      padding: 28px;
+      animation: modal-in .18s ease;
+    }
+
+    @keyframes modal-in {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .receipt-modal {
+      max-width: 380px;
+    }
+
+    .receipt-header {
+      text-align: center;
+      padding-bottom: 16px;
+      border-bottom: 1px dashed var(--border-strong);
+    }
+
+    .receipt-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin: 0;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--brand-dark);
+    }
+
+    .receipt-logo i,
+    .receipt-logo .dot {
+      color: var(--pos-accent);
+    }
+
+    .receipt-body {
+      padding: 16px 0;
+      max-height: 40vh;
+      overflow-y: auto;
+      font-size: 12.5px;
+    }
+
+    .receipt-store-name {
+      text-align: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 2px;
+    }
+
+    .receipt-meta {
+      text-align: center;
+      color: var(--ink-faint);
+      font-size: 11px;
+      margin-bottom: 14px;
+    }
+
+    .receipt-line {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      color: var(--ink-soft);
+    }
+
+    .receipt-line span:first-child {
+      max-width: 65%;
+    }
+
+    .receipt-divider {
+      border-top: 1px dashed var(--border-strong);
+      margin: 10px 0;
+    }
+
+    .receipt-total-line {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 800;
+      color: var(--ink);
+      font-size: 14px;
+      padding: 6px 0;
+    }
+
+    .void-modal {
+      max-width: 340px;
+      text-align: center;
+    }
+
+    .void-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: var(--danger-light);
+      color: var(--danger);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin: 0 auto 14px;
+    }
+
+    .void-modal h3 {
+      font-family: var(--font-display);
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .void-modal p {
+      margin: 0 0 20px;
+      font-size: 13px;
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+
+    .void-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .void-cancel-btn,
+    .void-confirm-btn {
+      flex: 1;
+      padding: 11px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 13px;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .void-cancel-btn {
+      background: var(--surface-alt);
+      color: var(--ink);
+    }
+
+    .void-cancel-btn:hover {
+      background: var(--border);
+    }
+
+    .void-confirm-btn {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .void-confirm-btn:hover {
+      background: #a53a30;
+    }
+
+    .pos-toast {
+      position: fixed;
+      bottom: 26px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--brand-dark);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 100px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 200;
+    }
+
+    .pos-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .pos-toast i {
+      color: var(--pos-accent);
+    }
+
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+
+      #receipt-modal-overlay,
+      #receipt-modal-overlay *,
+      #receipt-body,
+      #receipt-body * {
+        visibility: visible !important;
+      }
+
+      #receipt-modal-overlay {
+        position: static !important;
+        display: block !important;
+        background: #fff !important;
+        backdrop-filter: none !important;
+        inset: auto !important;
+      }
+
+      #receipt-modal-overlay .receipt-modal {
+        width: 80mm !important;
+        max-width: 80mm !important;
+        margin: 0 !important;
+        padding: 4mm !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        color: #000 !important;
+      }
+
+      #receipt-modal-overlay .receipt-footer-actions {
+        display: none !important;
+      }
+
+      #receipt-body {
+        max-height: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        font-size: 11px !important;
+        color: #000 !important;
+      }
+
+      .receipt-store-name,
+      .receipt-meta,
+      .receipt-line,
+      .receipt-total-line,
+      .receipt-logo {
+        color: #000 !important;
+      }
+
+      .receipt-logo i,
+      .receipt-logo .dot {
+        color: #000 !important;
+      }
+
+      @page {
+        size: 80mm auto;
+        margin: 4mm;
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .pos-layout {
+        grid-template-columns: 1fr 340px;
+      }
+
+      .pos-search-wrap {
+        max-width: 220px;
+      }
+    }
+
+    @media (max-width: 880px) {
+      .pos-header-center {
+        display: none;
+      }
+
+      .pos-layout {
+        grid-template-columns: 1fr 300px;
+      }
+    }
+    /* ── TOP NAVIGATION TABS IN HEADER ── */
+    .pos-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: 8px;
+    }
+
+    .pos-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .14);
+      color: rgba(255, 255, 255, .82);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: var(--radius-sm);
+      transition: all .15s ease;
+      white-space: nowrap;
+    }
+
+    .pos-nav-btn:hover {
+      background: rgba(255, 255, 255, .18);
+      color: #fff;
+    }
+
+    .pos-nav-btn.active {
+      background: var(--pos-accent);
+      border-color: var(--pos-accent);
+      color: var(--brand-dark);
+      font-weight: 700;
+    }
+
+    /* ── AUTHENTICATED FULL VIEWS (DASHBOARD, HISTORY, CUSTOMERS) ── */
+    #view-dashboard.active,
+    #view-history.active,
+    #view-customers.active {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    .view-content-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px 48px;
+    }
+
+    /* Dashboard Header Card */
+    .dash-welcome-card {
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%);
+      color: #fff;
+      border-radius: var(--radius-md);
+      padding: 22px 26px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .dash-welcome-text h2 {
+      font-family: var(--font-display);
+      font-size: 23px;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+
+    .dash-welcome-text p {
+      color: rgba(255, 255, 255, .82);
+      font-size: 13.5px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .session-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, .22);
+      color: #a7f3d0;
+      border: 1px solid rgba(16, 185, 129, .45);
+      padding: 4px 10px;
+      border-radius: 100px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse-dot-anim 1.5s infinite;
+    }
+
+    @keyframes pulse-dot-anim {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 8px #10b981; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    /* Quick Action Buttons */
+    .dash-quick-actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .dash-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      font-weight: 700;
+      font-size: 13.5px;
+      box-shadow: var(--shadow-sm);
+      transition: all .15s ease;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    .dash-action-btn.primary {
+      background: var(--brand);
+      color: #fff;
+    }
+    .dash-action-btn.primary:hover {
+      background: var(--brand-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .dash-action-btn.secondary {
+      background: var(--surface);
+      color: var(--ink);
+      border-color: var(--border);
+    }
+    .dash-action-btn.secondary:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Stat Cards */
+    .dash-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .stat-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .stat-card-icon.green { background: var(--brand-light); color: var(--brand); }
+    .stat-card-icon.amber { background: #fef3c7; color: #d97706; }
+    .stat-card-icon.blue  { background: #e0f2fe; color: #0284c7; }
+    .stat-card-icon.red   { background: var(--danger-light); color: var(--danger); }
+
+    .stat-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .stat-card-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      margin-bottom: 4px;
+    }
+
+    .stat-card-val {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+
+    .stat-card-sub {
+      font-size: 11px;
+      color: var(--ink-faint);
+      margin-top: 3px;
+    }
+
+    /* 2-column layout */
+    .dash-sections-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 992px) {
+      .dash-sections-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dash-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .dash-panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .dash-panel-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dash-panel-body {
+      padding: 0;
+      overflow-x: auto;
+    }
+
+    /* Table styles */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .data-table th {
+      background: var(--surface-alt);
+      color: var(--ink-soft);
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink);
+      vertical-align: middle;
+    }
+
+    .data-table tr:hover td {
+      background: rgba(47, 107, 69, .03);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-success { background: #dcfce7; color: #15803d; }
+    .badge-warning { background: #fef3c7; color: #b45309; }
+    .badge-danger  { background: #fee2e2; color: #b91c1c; }
+    .badge-info    { background: #e0f2fe; color: #0369a1; }
+    .badge-neutral { background: #f1f5f9; color: #475569; }
+
+    .btn-table-action {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      color: var(--brand);
+      padding: 5px 11px;
+      border-radius: var(--radius-sm);
+      font-size: 11.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all .15s ease;
+      cursor: pointer;
+    }
+
+    .btn-table-action:hover {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+
+    /* Low-stock item row */
+    .low-stock-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .low-stock-row:last-child {
+      border-bottom: none;
+    }
+    .low-stock-info {
+      min-width: 0;
+      flex: 1;
+    }
+    .low-stock-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .low-stock-meta {
+      font-size: 11px;
+      color: var(--ink-faint);
+      margin-top: 2px;
+    }
+
+    /* Filter & Toolbar for History / Customers */
+    .view-toolbar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      min-width: 260px;
+    }
+    .toolbar-search input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13px;
+      color: var(--ink);
+      width: 100%;
+    }
+
+    .toolbar-select {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Customer Selector Bar in POS */
+    .pos-customer-selector-bar {
+      padding: 10px 16px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .customer-info-tag {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .customer-info-tag i {
+      font-size: 20px;
+      color: var(--brand);
+    }
+
+    .customer-text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .customer-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      letter-spacing: .5px;
+    }
+
+    .customer-name-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-change-customer {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      color: var(--ink-soft);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 11px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all .15s ease;
+      cursor: pointer;
+    }
+
+    .btn-change-customer:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+    }
+
+    /* Modal Extras */
+    .modal-lg {
+      max-width: 660px !important;
+      width: 92% !important;
+    }
+
+    .modal-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header-row h3 {
+      font-family: var(--font-display);
+      font-size: 17px;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+    }
+
+    .modal-x-btn {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .customer-modal-search-row {
+      padding: 14px 20px;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .customer-modal-search-row .search-box-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      min-width: 200px;
+    }
+
+    .customer-modal-search-row .search-box-wrap input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .customer-options-list {
+      max-height: 380px;
+      overflow-y: auto;
+      padding: 10px 20px;
+    }
+
+    .customer-option-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      background: var(--surface);
+      transition: all .12s ease;
+    }
+
+    .customer-option-item:hover {
+      border-color: var(--brand);
+      background: var(--surface-alt);
+    }
+
+    .btn-select-cust {
+      background: var(--brand);
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+    }
+    .btn-select-cust:hover {
+      background: var(--brand-dark);
+    }
+
+    /* Receipt action buttons */
+    .receipt-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .receipt-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .receipt-footer-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .receipt-btn {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .receipt-btn.print-btn {
+      background: var(--brand);
+      color: #fff;
+    }
+    .receipt-btn.print-btn:hover {
+      background: var(--brand-dark);
+    }
+
+    .receipt-btn.new-order-btn {
+      background: var(--pos-accent);
+      color: var(--brand-dark);
+    }
+    .receipt-btn.new-order-btn:hover {
+      background: var(--pos-accent-dark);
+      color: #fff;
+    }
+
+    .receipt-btn.close-btn {
+      background: var(--surface-alt);
+      color: var(--ink);
+      border-color: var(--border);
+    }
+    .receipt-btn.close-btn:hover {
+      background: var(--border);
+    }
+
+    .receipt-store-subtitle {
+      font-size: 11px;
+      color: var(--ink-soft);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    .receipt-barcode-repr {
+      text-align: center;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      letter-spacing: 3px;
+      margin: 12px 0 6px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div class="screen" id="view-login">
+    <div class="auth-shell">
+      <div class="auth-brand-panel">
+        <div class="auth-brand-mark"><i class="fas fa-leaf"></i><span>Berning<span class="dot">.</span>Store</span>
+        </div>
+        <div class="auth-brand-copy">
+          <h1>Make sales without making customers wait too long.</h1>
+          <p>Sign in to open your account, scan items, and accept payments through cash, card, or GCash.</p>
+        </div>
+      </div>
+      <div class="auth-form-panel">
+        <div class="auth-form-head">
+          <h2>Welcome back</h2>
+          <p>First time here? <a onclick="showScreen('register')">Create an account</a></p>
+        </div>
+        <div class="auth-banner error hidden" id="login-error-banner">
+          <i class="fas fa-circle-exclamation"></i><span id="login-error-text"></span>
+        </div>
+        <form id="login-form" novalidate>
+          <div class="auth-field">
+            <label for="login-username">Username or email</label>
+            <div class="auth-input-group" id="login-username-group">
+              <i class="fas fa-user"></i>
+              <input type="text" id="login-username" placeholder="e.g. cashier_01" autocomplete="username">
+            </div>
+          </div>
+          <div class="auth-field">
+            <label for="login-password">Password</label>
+            <div class="auth-input-group" id="login-password-group">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="login-password" placeholder="Enter your password"
+                autocomplete="current-password">
+              <button type="button" class="auth-toggle-visibility" data-target="login-password"><i
+                  class="fas fa-eye"></i></button>
+            </div>
+          </div>
+          <div class="auth-row-between">
+            <label class="auth-checkbox"><input type="checkbox" id="login-remember"> Keep me signed in</label>
+            <a class="auth-link" id="forgot-password-link">Forgot password?</a>
+          </div>
+          <button type="submit" class="auth-submit-btn"><i class="fas fa-right-to-bracket"></i> Log In</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTER SCREEN -->
+  <div class="screen" id="view-register">
+    <div class="auth-shell">
+      <div class="auth-brand-panel">
+        <div class="auth-brand-mark"><i class="fas fa-leaf"></i><span>Berning<span class="dot">.</span>Store</span>
+        </div>
+        <div class="auth-brand-copy">
+          <h1>Set up your account in less than one minute.</h1>
+          <p>Create an account to access the system, manage sales, and get started with your work.</p>
+        </div>
+      </div>
+      <div class="auth-form-panel">
+        <div class="auth-form-head">
+          <h2>Create your account</h2>
+          <p>Already registered? <a onclick="showScreen('login')">Log in instead</a></p>
+        </div>
+        <div class="auth-banner error hidden" id="register-error-banner">
+          <i class="fas fa-circle-exclamation"></i><span id="register-error-text"></span>
+        </div>
+        <form id="register-form" novalidate>
+          <div class="auth-field">
+            <label for="reg-name">Full name</label>
+            <div class="auth-input-group" id="reg-name-group">
+              <i class="fas fa-id-card"></i>
+              <input type="text" id="reg-name" placeholder="Liziel Marie Jenizan" autocomplete="name">
+            </div>
+            <div class="auth-field-error" id="reg-name-error"></div>
+          </div>
+          <div class="auth-field-row">
+            <div class="auth-field">
+              <label for="reg-username">Username</label>
+              <div class="auth-input-group" id="reg-username-group">
+                <i class="fas fa-user"></i>
+                <input type="text" id="reg-username" placeholder="e.g. cashier_01" autocomplete="username">
+              </div>
+              <div class="auth-field-error" id="reg-username-error"></div>
+            </div>
+            <div class="auth-field">
+              <label for="reg-role">Role</label>
+              <div class="auth-input-group" id="reg-role-group">
+                <i class="fas fa-user-tag"></i>
+                <select id="reg-role">
+                  <option value="cashier" selected>Cashier</option>
+                  <option value="attendant">Store Attendant</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="auth-field">
+            <label for="reg-email">Email address</label>
+            <div class="auth-input-group" id="reg-email-group">
+              <i class="fas fa-envelope"></i>
+              <input type="email" id="reg-email" placeholder="liziel@berning.store" autocomplete="email">
+            </div>
+            <div class="auth-field-error" id="reg-email-error"></div>
+          </div>
+          <div class="auth-field">
+            <label for="reg-password">Password</label>
+            <div class="auth-input-group" id="reg-password-group">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="reg-password" placeholder="At least 8 characters" autocomplete="new-password">
+              <button type="button" class="auth-toggle-visibility" data-target="reg-password"><i
+                  class="fas fa-eye"></i></button>
+            </div>
+            <div class="password-strength" id="reg-password-strength"><span></span><span></span><span></span></div>
+            <div class="auth-field-error" id="reg-password-error"></div>
+          </div>
+          <div class="auth-field">
+            <label for="reg-confirm">Confirm password</label>
+            <div class="auth-input-group" id="reg-confirm-group">
+              <i class="fas fa-lock"></i>
+              <input type="password" id="reg-confirm" placeholder="Re-enter your password" autocomplete="new-password">
+              <button type="button" class="auth-toggle-visibility" data-target="reg-confirm"><i
+                  class="fas fa-eye"></i></button>
+            </div>
+            <div class="auth-field-error" id="reg-confirm-error"></div>
+          </div>
+          <div class="auth-row-between" style="margin-bottom:22px;">
+            <label class="auth-checkbox"><input type="checkbox" id="reg-terms"> I agree to the store's usage
+              policy</label>
+          </div>
+          <button type="submit" class="auth-submit-btn"><i class="fas fa-user-plus"></i> Create Account</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASHIER DASHBOARD SCREEN -->
+  <div class="screen" id="view-dashboard">
+    <header class="pos-header">
+      <div class="pos-header-brand">
+        <i class="fas fa-leaf"></i><span>Berning<span class="dot">.</span>Store</span>
+        <span class="pos-badge">Cashier Portal</span>
+      </div>
+      <nav class="pos-nav-links">
+        <button class="pos-nav-btn active" data-view="dashboard" onclick="showScreen('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+        <button class="pos-nav-btn" data-view="pos" onclick="showScreen('pos')"><i class="fas fa-cash-register"></i> Point of Sale</button>
+        <button class="pos-nav-btn" data-view="history" onclick="showScreen('history')"><i class="fas fa-clock-rotate-left"></i> Transactions</button>
+        <button class="pos-nav-btn" data-view="customers" onclick="showScreen('customers')"><i class="fas fa-users"></i> Customers</button>
+      </nav>
+      <div class="pos-header-right">
+        <div class="pos-clock" id="dash-clock">--:-- --</div>
+        <div class="pos-cashier-info">
+          <div class="cashier-avatar" id="dash-cashier-avatar">--</div>
+          <div>
+            <div class="cashier-name" id="dash-cashier-name">Cashier</div>
+            <div class="cashier-shift" id="dash-cashier-role">&nbsp;</div>
+          </div>
+        </div>
+        <button class="pos-exit-btn" onclick="logout()" title="Log Out"><i class="fas fa-right-from-bracket"></i> Log Out</button>
+      </div>
+    </header>
+
+    <div class="view-content-body">
+      <!-- Welcome Banner -->
+      <div class="dash-welcome-card">
+        <div class="dash-welcome-text">
+          <h2 id="dash-welcome-title">Good day, Cashier!</h2>
+          <p>
+            <span class="session-pulse"><span class="pulse-dot"></span> Active Cashier Session</span>
+            <span id="dash-current-date"><i class="far fa-calendar-alt"></i> Today</span>
+            <span id="dash-session-role"><i class="fas fa-id-badge"></i> Role: Cashier</span>
+          </p>
+        </div>
+        <div>
+          <button class="dash-action-btn primary" onclick="showScreen('pos')">
+            <i class="fas fa-cash-register"></i> Open POS Terminal
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="dash-quick-actions">
+        <button class="dash-action-btn primary" onclick="showScreen('pos')">
+          <i class="fas fa-cart-plus"></i> New Sale (POS)
+        </button>
+        <button class="dash-action-btn secondary" onclick="showScreen('history')">
+          <i class="fas fa-receipt"></i> Transaction History
+        </button>
+        <button class="dash-action-btn secondary" onclick="showScreen('customers')">
+          <i class="fas fa-user-group"></i> Customer Directory
+        </button>
+        <button class="dash-action-btn secondary" onclick="loadDashboardStats()">
+          <i class="fas fa-rotate"></i> Refresh Data
+        </button>
+      </div>
+
+      <!-- 4 Stat Cards -->
+      <div class="dash-stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon green"><i class="fas fa-peso-sign"></i></div>
+          <div class="stat-card-info">
+            <div class="stat-card-label">Today's Total Sales</div>
+            <div class="stat-card-val" id="stat-today-sales">₱0.00</div>
+            <div class="stat-card-sub" id="stat-today-personal">₱0.00 from your register</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon blue"><i class="fas fa-receipt"></i></div>
+          <div class="stat-card-info">
+            <div class="stat-card-label">Completed Transactions</div>
+            <div class="stat-card-val" id="stat-completed-count">0</div>
+            <div class="stat-card-sub" id="stat-personal-count">0 processed by you today</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon amber"><i class="fas fa-box-open"></i></div>
+          <div class="stat-card-info">
+            <div class="stat-card-label">Available Products</div>
+            <div class="stat-card-val" id="stat-available-products">0</div>
+            <div class="stat-card-sub">Active in store catalog</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-icon red"><i class="fas fa-triangle-exclamation"></i></div>
+          <div class="stat-card-info">
+            <div class="stat-card-label">Low Stock Alerts</div>
+            <div class="stat-card-val" id="stat-low-stock-count">0</div>
+            <div class="stat-card-sub" id="stat-out-stock-sub">0 out of stock</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 Column Section: Recent Transactions & Low Stock Alerts -->
+      <div class="dash-sections-grid">
+        <div class="dash-panel">
+          <div class="dash-panel-header">
+            <div class="dash-panel-title">
+              <i class="fas fa-clock-rotate-left" style="color:var(--brand);"></i>
+              <span>Recent Transactions</span>
+            </div>
+            <button class="btn-table-action" onclick="showScreen('history')">
+              <span>View All</span> <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+          <div class="dash-panel-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Time</th>
+                  <th>Customer</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Payment</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="dash-recent-sales-tbody">
+                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--ink-faint);">Loading recent transactions from database...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="dash-panel">
+          <div class="dash-panel-header">
+            <div class="dash-panel-title">
+              <i class="fas fa-triangle-exclamation" style="color:#d97706;"></i>
+              <span>Low-Stock Inventory</span>
+            </div>
+            <span class="badge badge-warning" id="dash-low-stock-badge">0 items</span>
+          </div>
+          <div class="dash-panel-body" id="dash-low-stock-list" style="max-height: 420px; overflow-y: auto;">
+            <div style="text-align:center;padding:24px;color:var(--ink-faint);">Checking inventory levels...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POS SCREEN -->
+  <div class="screen" id="view-pos">
+    <header class="pos-header">
+      <div class="pos-header-brand">
+        <i class="fas fa-leaf"></i><span>Berning<span class="dot">.</span>Store</span>
+        <span class="pos-badge">POS Terminal</span>
+      </div>
+      <nav class="pos-nav-links">
+        <button class="pos-nav-btn" data-view="dashboard" onclick="showScreen('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+        <button class="pos-nav-btn active" data-view="pos" onclick="showScreen('pos')"><i class="fas fa-cash-register"></i> POS</button>
+        <button class="pos-nav-btn" data-view="history" onclick="showScreen('history')"><i class="fas fa-clock-rotate-left"></i> History</button>
+        <button class="pos-nav-btn" data-view="customers" onclick="showScreen('customers')"><i class="fas fa-users"></i> Customers</button>
+      </nav>
+      <div class="pos-header-center">
+        <div class="pos-search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="pos-search-input" placeholder="Search products by name or category…"
+            autocomplete="off">
+          <kbd>Ctrl+F</kbd>
+        </div>
+      </div>
+      <div class="pos-barcode-wrap" title="Focus here and scan barcode (or press Ctrl+B)">
+        <div class="pos-barcode-input-group" id="pos-barcode-group">
+          <i class="fas fa-barcode"></i>
+          <input type="text" id="pos-barcode-input" placeholder="Scan barcode…" autocomplete="off">
+          <span class="barcode-hint">Ctrl+B</span>
+        </div>
+        <div class="barcode-status" id="barcode-status"></div>
+      </div>
+      <div class="pos-header-right">
+        <div class="pos-clock" id="pos-clock">--:-- --</div>
+        <div class="pos-cashier-info">
+          <div class="cashier-avatar" id="cashier-avatar-initials">--</div>
+          <div>
+            <div class="cashier-name" id="cashier-name-display">Cashier</div>
+            <div class="cashier-shift" id="cashier-role-display">&nbsp;</div>
+          </div>
+        </div>
+        <button class="pos-exit-btn" id="cashier-logout-btn" title="Log Out"><i class="fas fa-right-from-bracket"></i>
+          Log Out</button>
+      </div>
+    </header>
+
+    <main class="pos-layout">
+      <section class="pos-products-panel">
+        <div class="pos-category-bar" id="pos-category-bar">
+          <button class="pos-cat-btn active" data-cat="all" id="cat-all"><i class="fas fa-th-large"></i> All</button>
+        </div>
+        <div class="pos-products-grid" id="pos-products-grid"></div>
+      </section>
+
+      <aside class="pos-order-panel">
+        <!-- Customer Selector Bar -->
+        <div class="pos-customer-selector-bar">
+          <div class="customer-info-tag">
+            <i class="fas fa-user-circle"></i>
+            <div class="customer-text">
+              <span class="customer-title">Customer</span>
+              <span class="customer-name-val" id="pos-customer-name">Walk-in Customer</span>
+            </div>
+          </div>
+          <button type="button" class="btn-change-customer" onclick="openCustomerSelectModal()">
+            <i class="fas fa-user-pen"></i> <span>Change</span>
+          </button>
+        </div>
+
+        <div class="pos-order-header">
+          <div class="order-header-title"><i class="fas fa-receipt"></i><span>Current Order</span></div>
+          <div class="order-header-actions">
+            <span class="order-id-badge" id="order-id-display">Order #001</span>
+            <button class="order-void-btn" onclick="voidOrder()" title="Void / Clear Order"><i
+                class="fas fa-trash-alt"></i> Void</button>
+          </div>
+        </div>
+
+        <div class="pos-order-items" id="pos-order-items">
+          <div class="pos-empty-order" id="pos-empty-state">
+            <i class="fas fa-shopping-basket"></i>
+            <p>No items added</p>
+            <span>Tap a product to add it to the order</span>
+          </div>
+        </div>
+
+        <div class="pos-order-divider"></div>
+
+        <div class="pos-discount-row">
+          <div class="pos-promo-input-group">
+            <i class="fas fa-tag"></i>
+            <input type="text" id="pos-promo-input" placeholder="Promo code (e.g. BERNINGFRESH)" autocomplete="off">
+            <button onclick="applyPosPromo()">Apply</button>
+          </div>
+          <div class="pos-promo-status" id="pos-promo-status"></div>
+        </div>
+
+        <div class="pos-totals">
+          <div class="totals-row"><span>Subtotal</span><span id="pos-subtotal">₱0.00</span></div>
+          <div class="totals-row discount-row" id="pos-discount-row" style="display:none;">
+            <span><i class="fas fa-tag" style="color:var(--pos-accent);"></i> Discount</span>
+            <span id="pos-discount-val" style="color:var(--pos-accent);">-₱0.00</span>
+          </div>
+          <div class="totals-row tax-row"><span>VAT (12%)</span><span id="pos-tax">₱0.00</span></div>
+          <div class="totals-divider"></div>
+          <div class="totals-row total-final-row"><span>TOTAL</span><span id="pos-total">₱0.00</span></div>
+        </div>
+
+        <div class="pos-payment-methods">
+          <div class="payment-method-label">Payment Method</div>
+          <div class="payment-method-btns">
+            <button class="pay-method-btn active" data-method="cash" onclick="selectPayMethod('cash')"><i
+                class="fas fa-money-bill-wave"></i> Cash</button>
+            <button class="pay-method-btn" data-method="card" onclick="selectPayMethod('card')"><i
+                class="fas fa-credit-card"></i> Card</button>
+            <button class="pay-method-btn" data-method="gcash" onclick="selectPayMethod('gcash')"><i
+                class="fas fa-mobile-screen-button"></i> GCash</button>
+          </div>
+        </div>
+
+        <div class="pos-cash-tender-section" id="pos-cash-tender-section">
+          <label class="tender-label">Cash Tendered</label>
+          <div class="tender-input-group">
+            <span class="tender-currency">₱</span>
+            <input type="number" id="pos-tender-input" placeholder="0.00" min="0" step="0.01" oninput="calcChange()">
+          </div>
+          <div class="quick-bills">
+            <button onclick="setTender(20)">₱20</button>
+            <button onclick="setTender(50)">₱50</button>
+            <button onclick="setTender(100)">₱100</button>
+            <button onclick="setTender(200)">₱200</button>
+            <button onclick="setTender(500)">₱500</button>
+            <button onclick="setTender(1000)">₱1000</button>
+          </div>
+          <div class="change-display"><span>Change</span><span class="change-amount" id="pos-change-amount">₱0.00</span>
+          </div>
+        </div>
+
+        <button class="pos-charge-btn" id="pos-charge-btn" onclick="processCharge()">
+          <i class="fas fa-bolt"></i><span id="pos-charge-label">Charge ₱0.00</span>
+        </button>
+      </aside>
+    </main>
+  </div>
+
+  <!-- TRANSACTION HISTORY SCREEN -->
+  <div class="screen" id="view-history">
+    <header class="pos-header">
+      <div class="pos-header-brand">
+        <i class="fas fa-leaf"></i><span>Berning<span class="dot">.</span>Store</span>
+        <span class="pos-badge">Transaction History</span>
+      </div>
+      <nav class="pos-nav-links">
+        <button class="pos-nav-btn" data-view="dashboard" onclick="showScreen('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+        <button class="pos-nav-btn" data-view="pos" onclick="showScreen('pos')"><i class="fas fa-cash-register"></i> Point of Sale</button>
+        <button class="pos-nav-btn active" data-view="history" onclick="showScreen('history')"><i class="fas fa-clock-rotate-left"></i> Transactions</button>
+        <button class="pos-nav-btn" data-view="customers" onclick="showScreen('customers')"><i class="fas fa-users"></i> Customers</button>
+      </nav>
+      <div class="pos-header-right">
+        <div class="pos-clock" id="history-clock">--:-- --</div>
+        <div class="pos-cashier-info">
+          <div class="cashier-avatar" id="history-cashier-avatar">--</div>
+          <div>
+            <div class="cashier-name" id="history-cashier-name">Cashier</div>
+            <div class="cashier-shift" id="history-cashier-role">&nbsp;</div>
+          </div>
+        </div>
+        <button class="pos-exit-btn" onclick="logout()" title="Log Out"><i class="fas fa-right-from-bracket"></i> Log Out</button>
+      </div>
+    </header>
+
+    <div class="view-content-body">
+      <div class="view-toolbar">
+        <div class="toolbar-left">
+          <div class="toolbar-search">
+            <i class="fas fa-search" style="color:var(--ink-faint);"></i>
+            <input type="text" id="history-search-input" placeholder="Search order #, customer, cashier…" oninput="onHistoryFilterChange()">
+          </div>
+          <select class="toolbar-select" id="history-date-filter" onchange="onHistoryFilterChange()">
+            <option value="all">All Dates</option>
+            <option value="today" selected>Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+          </select>
+          <select class="toolbar-select" id="history-payment-filter" onchange="onHistoryFilterChange()">
+            <option value="all">All Payment Methods</option>
+            <option value="cash">Cash</option>
+            <option value="gcash">GCash</option>
+            <option value="card">Card</option>
+          </select>
+        </div>
+        <div class="toolbar-right">
+          <button class="dash-action-btn secondary" onclick="loadTransactionHistory()">
+            <i class="fas fa-rotate"></i> Refresh
+          </button>
+          <button class="dash-action-btn primary" onclick="showScreen('pos')">
+            <i class="fas fa-cash-register"></i> New Transaction
+          </button>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <div class="dash-panel-title">
+            <i class="fas fa-file-invoice-dollar" style="color:var(--brand);"></i>
+            <span>Sales & Transactions Ledger</span>
+          </div>
+          <span class="badge badge-info" id="history-count-badge">0 records</span>
+        </div>
+        <div class="dash-panel-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Date & Time</th>
+                <th>Cashier</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Subtotal</th>
+                <th>Total</th>
+                <th>Payment</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="history-sales-tbody">
+              <tr><td colspan="9" style="text-align:center;padding:28px;color:var(--ink-faint);">Loading transactions from database...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER DIRECTORY SCREEN -->
+  <div class="screen" id="view-customers">
+    <header class="pos-header">
+      <div class="pos-header-brand">
+        <i class="fas fa-leaf"></i><span>Berning<span class="dot">.</span>Store</span>
+        <span class="pos-badge">Customer Directory</span>
+      </div>
+      <nav class="pos-nav-links">
+        <button class="pos-nav-btn" data-view="dashboard" onclick="showScreen('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</button>
+        <button class="pos-nav-btn" data-view="pos" onclick="showScreen('pos')"><i class="fas fa-cash-register"></i> Point of Sale</button>
+        <button class="pos-nav-btn" data-view="history" onclick="showScreen('history')"><i class="fas fa-clock-rotate-left"></i> Transactions</button>
+        <button class="pos-nav-btn active" data-view="customers" onclick="showScreen('customers')"><i class="fas fa-users"></i> Customers</button>
+      </nav>
+      <div class="pos-header-right">
+        <div class="pos-clock" id="cust-clock">--:-- --</div>
+        <div class="pos-cashier-info">
+          <div class="cashier-avatar" id="cust-cashier-avatar">--</div>
+          <div>
+            <div class="cashier-name" id="cust-cashier-name">Cashier</div>
+            <div class="cashier-shift" id="cust-cashier-role">&nbsp;</div>
+          </div>
+        </div>
+        <button class="pos-exit-btn" onclick="logout()" title="Log Out"><i class="fas fa-right-from-bracket"></i> Log Out</button>
+      </div>
+    </header>
+
+    <div class="view-content-body">
+      <div class="view-toolbar">
+        <div class="toolbar-left">
+          <div class="toolbar-search">
+            <i class="fas fa-search" style="color:var(--ink-faint);"></i>
+            <input type="text" id="customers-search-input" placeholder="Search customer by name, phone, email…" oninput="filterCustomersTable()">
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <button class="dash-action-btn secondary" onclick="loadCustomersList()">
+            <i class="fas fa-rotate"></i> Refresh
+          </button>
+          <button class="dash-action-btn primary" onclick="openAddCustomerModal()">
+            <i class="fas fa-user-plus"></i> Add New Customer
+          </button>
+        </div>
+      </div>
+
+      <div class="dash-panel">
+        <div class="dash-panel-header">
+          <div class="dash-panel-title">
+            <i class="fas fa-address-book" style="color:var(--brand);"></i>
+            <span>Registered Store Customers</span>
+          </div>
+          <span class="badge badge-info" id="customers-count-badge">0 customers</span>
+        </div>
+        <div class="dash-panel-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Total Orders</th>
+                <th>Total Spent</th>
+                <th>Last Purchase</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="customers-list-tbody">
+              <tr><td colspan="9" style="text-align:center;padding:28px;color:var(--ink-faint);">Loading customers from database...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARED MODALS -->
+  <!-- Thermal Receipt Modal -->
+  <div class="pos-modal-overlay" id="receipt-modal-overlay">
+    <div class="pos-modal receipt-modal">
+      <div class="receipt-header">
+        <div class="receipt-logo"><i class="fas fa-leaf"></i><span>Berning<span class="dot">.</span>Store</span></div>
+        <button type="button" class="receipt-close-btn" onclick="closeReceiptModal()" title="Close">&times;</button>
+      </div>
+      <div class="receipt-body" id="receipt-body"></div>
+      <div class="receipt-footer-actions">
+        <button type="button" class="receipt-btn print-btn" onclick="printReceipt()"><i class="fas fa-print"></i> Print</button>
+        <button type="button" class="receipt-btn new-order-btn" onclick="startNewOrder()"><i class="fas fa-plus"></i> New Sale</button>
+        <button type="button" class="receipt-btn close-btn" onclick="closeReceiptModal()"><i class="fas fa-check"></i> Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Void Order Confirmation Modal -->
+  <div class="pos-modal-overlay" id="void-modal-overlay">
+    <div class="pos-modal void-modal">
+      <div class="void-icon"><i class="fas fa-exclamation-triangle"></i></div>
+      <h3>Void This Order?</h3>
+      <p>All items in the current order will be removed. This action cannot be undone.</p>
+      <div class="void-actions">
+        <button class="void-cancel-btn" onclick="closeVoidModal()"><i class="fas fa-arrow-left"></i> Cancel</button>
+        <button class="void-confirm-btn" onclick="confirmVoid()"><i class="fas fa-trash-alt"></i> Yes, Void Order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Select Modal -->
+  <div class="pos-modal-overlay" id="customer-select-modal">
+    <div class="pos-modal modal-lg" style="max-height:85vh; display:flex; flex-direction:column; padding:0;">
+      <div class="modal-header-row">
+        <h3><i class="fas fa-user-tag" style="color:var(--brand);"></i> Select Customer for Order</h3>
+        <button type="button" class="modal-x-btn" onclick="closeCustomerSelectModal()">&times;</button>
+      </div>
+      <div class="customer-modal-search-row">
+        <div class="search-box-wrap">
+          <i class="fas fa-search" style="color:var(--ink-faint);"></i>
+          <input type="text" id="cust-modal-search" placeholder="Search customer name or phone..." oninput="filterCustomerSelectModal()">
+        </div>
+        <button type="button" class="btn-select-cust" onclick="openAddCustomerModal()"><i class="fas fa-user-plus"></i> + Add New</button>
+      </div>
+      <div class="customer-options-list" id="customer-options-list">
+        <!-- Populated via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Customer Modal -->
+  <div class="pos-modal-overlay" id="add-customer-modal">
+    <div class="pos-modal" style="max-width:480px; padding:24px;">
+      <div class="modal-header-row" style="padding:0 0 14px; margin-bottom:16px;">
+        <h3><i class="fas fa-user-plus" style="color:var(--brand);"></i> Add New Customer</h3>
+        <button type="button" class="modal-x-btn" onclick="closeAddCustomerModal()">&times;</button>
+      </div>
+      <form id="add-customer-form" onsubmit="handleSaveCustomer(event)">
+        <div class="auth-field" style="margin-bottom:12px;">
+          <label for="new-cust-name" style="font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:4px; display:block;">Full Name *</label>
+          <div class="auth-input-group">
+            <i class="fas fa-user"></i>
+            <input type="text" id="new-cust-name" placeholder="e.g. Maria Santos" required>
+          </div>
+        </div>
+        <div class="auth-field" style="margin-bottom:12px;">
+          <label for="new-cust-phone" style="font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:4px; display:block;">Phone Number</label>
+          <div class="auth-input-group">
+            <i class="fas fa-phone"></i>
+            <input type="text" id="new-cust-phone" placeholder="e.g. 09171234567">
+          </div>
+        </div>
+        <div class="auth-field" style="margin-bottom:12px;">
+          <label for="new-cust-email" style="font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:4px; display:block;">Email Address</label>
+          <div class="auth-input-group">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="new-cust-email" placeholder="e.g. maria@gmail.com">
+          </div>
+        </div>
+        <div class="auth-field" style="margin-bottom:16px;">
+          <label for="new-cust-address" style="font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:4px; display:block;">Address</label>
+          <div class="auth-input-group">
+            <i class="fas fa-location-dot"></i>
+            <input type="text" id="new-cust-address" placeholder="e.g. Barangay Poblacion">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <button type="button" class="void-cancel-btn" onclick="closeAddCustomerModal()">Cancel</button>
+          <button type="submit" class="btn-select-cust" style="flex:1; padding:11px; font-size:13px;" id="save-cust-btn"><i class="fas fa-save"></i> Save Customer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Transaction Details Modal -->
+  <div class="pos-modal-overlay" id="transaction-details-modal">
+    <div class="pos-modal modal-lg" style="max-height:85vh; display:flex; flex-direction:column; padding:0;">
+      <div class="modal-header-row">
+        <h3 id="td-modal-title"><i class="fas fa-file-invoice" style="color:var(--brand);"></i> Transaction Details</h3>
+        <button type="button" class="modal-x-btn" onclick="closeTransactionDetailsModal()">&times;</button>
+      </div>
+      <div id="td-modal-content" style="padding:20px; overflow-y:auto; flex:1;">
+        <!-- Populated via JS -->
+      </div>
+      <div style="padding:14px 20px; border-top:1px solid var(--border); background:var(--surface-alt); display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" class="void-cancel-btn" onclick="closeTransactionDetailsModal()">Close</button>
+        <button type="button" class="receipt-btn print-btn" id="td-reprint-btn"><i class="fas fa-print"></i> Reprint Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POS Toast -->
+  <div class="pos-toast" id="pos-toast">
+    <i class="fas fa-check-circle"></i><span id="pos-toast-msg">Item added!</span>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* Shared state: active POS session from MySQL */
+      let session = null;
+
+      function showScreen(name) {
+        if (name === "login" || name === "register") {
+          window.location.replace("../login/"); // admin_login.html clean URL
+          return;
+        }
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        document.getElementById("view-" + name).classList.add("active");
+      }
+
+      /* Auth helpers */
+
+      function showBanner(bannerEl, textEl, message, isSuccess = false) {
+        textEl.textContent = message;
+        bannerEl.classList.remove("hidden");
+        bannerEl.classList.toggle("success", isSuccess);
+        bannerEl.classList.toggle("error", !isSuccess);
+        const icon = bannerEl.querySelector("i");
+        if (icon) {
+          icon.className = isSuccess ? "fas fa-circle-check" : "fas fa-circle-exclamation";
+        }
+      }
+      function hideBanner(bannerEl) { bannerEl.classList.add("hidden"); }
+      function setFieldError(groupEl, errorEl, message) {
+        groupEl.classList.toggle("error", !!message);
+        if (errorEl) errorEl.textContent = message || "";
+      }
+      function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+      function isValidUsername(v) { return /^[a-zA-Z0-9._]{3,24}$/.test(v); }
+
+      document.querySelectorAll(".auth-toggle-visibility").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const input = document.getElementById(btn.dataset.target);
+          const icon = btn.querySelector("i");
+          const isPw = input.type === "password";
+          input.type = isPw ? "text" : "password";
+          icon.className = isPw ? "fas fa-eye-slash" : "fas fa-eye";
+        });
+      });
+
+      document.getElementById("forgot-password-link").addEventListener("click", () => {
+        showBanner(
+          document.getElementById("login-error-banner"),
+          document.getElementById("login-error-text"),
+          "Ask your store admin to reset your password for now — self-service reset isn't set up yet."
+        );
+      });
+
+      /* Login via database API */
+      const loginForm = document.getElementById("login-form");
+      const loginBanner = document.getElementById("login-error-banner");
+      const loginBannerText = document.getElementById("login-error-text");
+      const loginUsernameGroup = document.getElementById("login-username-group");
+      const loginPasswordGroup = document.getElementById("login-password-group");
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideBanner(loginBanner);
+        setFieldError(loginUsernameGroup, null, "");
+        setFieldError(loginPasswordGroup, null, "");
+
+        const username = document.getElementById("login-username").value.trim();
+        const password = document.getElementById("login-password").value;
+
+        if (!username || !password) {
+          showBanner(loginBanner, loginBannerText, "Enter both your username and password.");
+          return;
+        }
+
+        try {
+          const res = await fetch("api/login.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json();
+
+          if (!data.success) {
+            showBanner(loginBanner, loginBannerText, data.message || "Invalid credentials.", false);
+            return;
+          }
+
+          // Enforce role routing: Owner must be routed to Owner Management Portal
+          const userRole = String((data.user && data.user.role) || '').trim().toLowerCase();
+          if (userRole === "owner") {
+            showBanner(loginBanner, loginBannerText, "Owner account detected. Redirecting to Owner Dashboard...", true);
+            if (data.token) localStorage.setItem("bs_session_token", data.token);
+            localStorage.setItem("bs_current_user", JSON.stringify(data.user));
+            setTimeout(() => {
+              window.location.replace("../admin/"); // admin.html clean URL
+            }, 800);
+            return;
+          }
+
+          session = {
+            id: data.user.user_id,
+            user_id: data.user.user_id,
+            name: data.user.full_name,
+            full_name: data.user.full_name,
+            username: data.user.username,
+            email: data.user.email || "",
+            role: data.user.role
+          };
+
+          if (data.token) localStorage.setItem("bs_session_token", data.token);
+          localStorage.setItem("bs_current_user", JSON.stringify(data.user));
+
+          document.getElementById("login-username").value = "";
+          document.getElementById("login-password").value = "";
+          enterPos();
+        } catch (err) {
+          showBanner(loginBanner, loginBannerText, "Login failed: " + err.message, false);
+        }
+      });
+
+      /* Register via database API */
+      const regForm = document.getElementById("register-form");
+      const regBanner = document.getElementById("register-error-banner");
+      const regBannerText = document.getElementById("register-error-text");
+      const regGroups = {
+        name: document.getElementById("reg-name-group"),
+        username: document.getElementById("reg-username-group"),
+        email: document.getElementById("reg-email-group"),
+        password: document.getElementById("reg-password-group"),
+        confirm: document.getElementById("reg-confirm-group"),
+      };
+      const regErrors = {
+        name: document.getElementById("reg-name-error"),
+        username: document.getElementById("reg-username-error"),
+        email: document.getElementById("reg-email-error"),
+        password: document.getElementById("reg-password-error"),
+        confirm: document.getElementById("reg-confirm-error"),
+      };
+      const strengthBar = document.getElementById("reg-password-strength");
+
+      function passwordStrengthLabel(pw) {
+        let score = 0;
+        if (pw.length >= 8) score++;
+        if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) score++;
+        if (/[^A-Za-z0-9]/.test(pw) && pw.length >= 10) score++;
+        if (score <= 1) return "weak";
+        if (score === 2) return "medium";
+        return "strong";
+      }
+
+      document.getElementById("reg-password").addEventListener("input", (e) => {
+        const pw = e.target.value;
+        strengthBar.className = "password-strength" + (pw ? " " + passwordStrengthLabel(pw) : "");
+      });
+
+      regForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        Object.keys(regGroups).forEach(k => setFieldError(regGroups[k], regErrors[k], ""));
+        hideBanner(regBanner);
+
+        const name = document.getElementById("reg-name").value.trim();
+        const username = document.getElementById("reg-username").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+        const confirm = document.getElementById("reg-confirm").value;
+        const role = document.getElementById("reg-role").value;
+        const terms = document.getElementById("reg-terms").checked;
+
+        let hasError = false;
+        if (name.length < 2) { setFieldError(regGroups.name, regErrors.name, "Enter your full name."); hasError = true; }
+        if (!isValidUsername(username)) { setFieldError(regGroups.username, regErrors.username, "3-24 characters: letters, numbers, dot or underscore."); hasError = true; }
+        if (!isValidEmail(email)) { setFieldError(regGroups.email, regErrors.email, "Enter a valid email address."); hasError = true; }
+        if (password.length < 5) { setFieldError(regGroups.password, regErrors.password, "Use at least 5 characters."); hasError = true; }
+        if (!confirm || confirm !== password) { setFieldError(regGroups.confirm, regErrors.confirm, "Passwords don't match."); hasError = true; }
+        if (!terms) { showBanner(regBanner, regBannerText, "Please agree to the store's usage policy to continue."); hasError = true; }
+
+        if (hasError) {
+          if (regBanner.classList.contains("hidden")) showBanner(regBanner, regBannerText, "Please fix the highlighted fields.");
+          return;
+        }
+
+        try {
+          let dbRole = "Cashier";
+          if (role === "attendant") dbRole = "Store Attendant";
+
+          const res = await fetch("api/admin_users.php?action=add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              full_name: name,
+              username: username,
+              email: email,
+              password: password,
+              role: dbRole
+            })
+          });
+          const data = await res.json();
+          if (!data.success) {
+            showBanner(regBanner, regBannerText, data.message || "Registration failed.", false);
+            return;
+          }
+
+          // Registration succeeded: reset form and switch to login view for proper authentication
+          regForm.reset();
+          strengthBar.className = "password-strength";
+          showScreen("login");
+          document.getElementById("login-username").value = username;
+          document.getElementById("login-password").value = "";
+          showBanner(
+            loginBanner,
+            loginBannerText,
+            `Account '${username}' created successfully as ${dbRole}! Please log in below.`,
+            true
+          );
+        } catch (err) {
+          showBanner(regBanner, regBannerText, "Registration error: " + err.message, false);
+        }
+      });
+
+      /* Product catalog — loaded dynamically from the database */
+      let PRODUCTS = [];
+      let cachedCustomers = [];
+      let currentCustomer = { id: 1, name: "Walk-in Customer", phone: "", email: "" };
+      let nextOrderId = 1;
+      let historyDebounceTimer = null;
+
+      /* Assign a display icon based on category name */
+      const CATEGORY_ICONS = {
+        "Beverages": "🥤", "Snacks": "🍟", "Canned Goods": "🥫",
+        "Instant Noodles": "🍜", "Rice": "🍚", "Condiments": "🫙",
+        "Dairy Products": "🥛", "Personal Care": "🧴",
+        "Cleaning Supplies": "🧹", "Biscuits": "🍪",
+        "Produce": "🥬", "Bakery": "🍞",
+      };
+
+      /* Font-Awesome icons for the category filter bar */
+      const CATEGORY_FA_ICONS = {
+        "Beverages": "fa-mug-hot", "Snacks": "fa-cookie-bite",
+        "Canned Goods": "fa-jar", "Instant Noodles": "fa-bowl-food",
+        "Rice": "fa-seedling", "Condiments": "fa-pepper-hot",
+        "Dairy Products": "fa-cheese", "Personal Care": "fa-pump-soap",
+        "Cleaning Supplies": "fa-broom", "Biscuits": "fa-cookie",
+        "Produce": "fa-carrot", "Bakery": "fa-bread-slice",
+      };
+
+      const TAX_RATE = 0.12;
+      const PROMO_CODES = { "BERNINGFRESH": 0.20 };
+
+      const pos = {
+        orderId: 1,
+        activeCategory: "all",
+        searchTerm: "",
+        cart: [],
+        promoCode: null,
+        promoRate: 0,
+        payMethod: "cash",
+        tendered: 0,
+        initialized: false,
+      };
+
+      function findProduct(id) { return PRODUCTS.find(p => String(p.id) === String(id)); }
+      function formatPeso(n) { return "₱" + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      function getInitials(name) { return (name || "").trim().split(/\s+/).slice(0, 2).map(n => n[0].toUpperCase()).join(""); }
+
+      function showScreen(name) {
+        if (name === "login" || name === "register") {
+          window.location.replace("../login/"); // admin_login.html clean URL
+          return;
+        }
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        const targetScreen = document.getElementById("view-" + name);
+        if (targetScreen) {
+          targetScreen.classList.add("active");
+        }
+
+        // Synchronize top navigation tab active states across all screen headers
+        document.querySelectorAll(".pos-nav-btn").forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.view === name);
+        });
+
+        if (name === "dashboard") {
+          loadDashboardStats();
+        } else if (name === "pos") {
+          loadProductsFromDB();
+          fetchNextOrderId();
+          renderCustomerBar();
+        } else if (name === "history") {
+          loadTransactionHistory();
+        } else if (name === "customers") {
+          loadCustomersList();
+        }
+      }
+
+      function enterPos() {
+        renderCashierInfo();
+        if (!pos.initialized) {
+          initPosOnce();
+          pos.initialized = true;
+        }
+        resetOrder();
+        fetchNextOrderId();
+        renderCustomerBar();
+        showScreen("dashboard");
+      }
+
+      function renderCashierInfo() {
+        const displayName = session ? (session.full_name || session.name || session.username) : "Staff";
+        const displayRole = session ? (session.role === "Owner" ? "Administrator" : session.role) : "Cashier";
+        const initials = getInitials(displayName);
+
+        // Update all headers across all screens
+        ["cashier-name-display", "dash-cashier-name", "history-cashier-name", "cust-cashier-name"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = displayName;
+        });
+
+        ["cashier-role-display", "dash-cashier-role", "history-cashier-role", "cust-cashier-role"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = displayRole;
+        });
+
+        ["cashier-avatar-initials", "dash-cashier-avatar", "history-cashier-avatar", "cust-cashier-avatar"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = initials;
+        });
+
+        const welcomeTitle = document.getElementById("dash-welcome-title");
+        if (welcomeTitle) welcomeTitle.textContent = `Good day, ${displayName}!`;
+
+        const sessionRole = document.getElementById("dash-session-role");
+        if (sessionRole) sessionRole.innerHTML = `<i class="fas fa-id-badge"></i> Role: ${displayRole}`;
+      }
+
+      async function logout() {
+        try {
+          const token = localStorage.getItem('bs_session_token');
+          const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+          await fetch('api/logout.php', { method: 'POST', headers });
+        } catch (err) {
+          console.warn("Logout request failed:", err);
+        } finally {
+          session = null;
+          localStorage.removeItem('bs_session_token');
+          localStorage.removeItem('bs_current_user');
+          window.location.replace("../login/"); // admin_login.html clean URL
+        }
+      }
+
+      function initPosOnce() {
+        loadProductsFromDB();
+        startClock();
+        bindGlobalEvents();
+      }
+
+      function startClock() {
+        function tick() {
+          const now = new Date();
+          let h = now.getHours();
+          const m = String(now.getMinutes()).padStart(2, "0");
+          const ampm = h >= 12 ? "PM" : "AM";
+          h = h % 12 || 12;
+          const timeStr = `${h}:${m} ${ampm}`;
+
+          ["pos-clock", "dash-clock", "history-clock", "cust-clock"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = timeStr;
+          });
+
+          const dateEl = document.getElementById("dash-current-date");
+          if (dateEl) {
+            const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+            dateEl.innerHTML = `<i class="far fa-calendar-alt"></i> ${now.toLocaleDateString(undefined, options)}`;
+          }
+        }
+        tick();
+        setInterval(tick, 10000);
+      }
+
+      /**
+       * Fetch product catalog from the database via API.
+       * On success, replaces PRODUCTS and re-renders the POS grid.
+       */
+      async function loadProductsFromDB() {
+        try {
+          const res = await fetch("api/get_products.php");
+          const data = await res.json();
+          if (data.success && Array.isArray(data.products)) {
+            PRODUCTS = data.products.map(p => ({
+              id: String(p.id),
+              barcode: p.barcode || "",
+              name: p.name,
+              category: p.category_name || "General",
+              price: Number(p.price) || 0,
+              icon: CATEGORY_ICONS[p.category_name] || "📦",
+              stock: Number(p.stock) || 0,
+            }));
+          } else {
+            console.error("API returned unsuccessful response:", data);
+            PRODUCTS = [];
+          }
+        } catch (err) {
+          console.error("Failed to load products from database:", err);
+          PRODUCTS = [];
+        }
+        renderCategories();
+        renderProducts();
+      }
+
+      function renderCategories() {
+        const bar = document.getElementById("pos-category-bar");
+        if (!bar) return;
+        const allBtn = document.getElementById("cat-all");
+        bar.innerHTML = "";
+        if (allBtn) bar.appendChild(allBtn);
+
+        const categories = [...new Set(PRODUCTS.map(p => p.category))];
+
+        categories.forEach(cat => {
+          const btn = document.createElement("button");
+          btn.className = "pos-cat-btn" + (pos.activeCategory === cat ? " active" : "");
+          btn.dataset.cat = cat;
+          btn.innerHTML = `<i class="fas ${CATEGORY_FA_ICONS[cat] || "fa-tag"}"></i> ${cat}`;
+          btn.addEventListener("click", () => {
+            pos.activeCategory = cat;
+            setActiveCategoryBtn(cat);
+            renderProducts();
+          });
+          bar.appendChild(btn);
+        });
+
+        if (allBtn) {
+          allBtn.onclick = () => {
+            pos.activeCategory = "all";
+            setActiveCategoryBtn("all");
+            renderProducts();
+          };
+        }
+      }
+
+      function setActiveCategoryBtn(cat) {
+        document.querySelectorAll(".pos-cat-btn").forEach(b => b.classList.toggle("active", b.dataset.cat === cat));
+      }
+
+      function renderProducts() {
+        const grid = document.getElementById("pos-products-grid");
+        if (!grid) return;
+        grid.innerHTML = "";
+        const term = pos.searchTerm.trim().toLowerCase();
+        const filtered = PRODUCTS.filter(p => {
+          const matchesCat = pos.activeCategory === "all" || p.category === pos.activeCategory;
+          const matchesTerm = !term || p.name.toLowerCase().includes(term) || p.category.toLowerCase().includes(term);
+          return matchesCat && matchesTerm;
+        });
+
+        if (filtered.length === 0) {
+          grid.innerHTML = `<div class="pos-no-results"><i class="fas fa-box-open" style="font-size:26px;display:block;margin-bottom:10px;"></i>No products match your search</div>`;
+          return;
+        }
+
+        filtered.forEach(p => {
+          const card = document.createElement("button");
+          card.className = "pos-product-card" + (p.stock <= 0 ? " out-of-stock" : "");
+          card.disabled = p.stock <= 0;
+          card.innerHTML = `
+            ${p.stock <= 0 ? '<span class="product-card-stock-flag">Out of stock</span>' : (p.stock <= 5 ? `<span class="product-card-stock-flag" style="background:#fef3c7;color:#b45309;">Only ${p.stock} left</span>` : '')}
+            <div class="product-card-icon">${p.icon}</div>
+            <div class="product-card-name">${escapeReceiptText(p.name)}</div>
+            <div class="product-card-cat">${escapeReceiptText(p.category)} • Stock: ${p.stock}</div>
+            <div class="product-card-footer">
+              <span class="product-card-price">₱${p.price.toFixed(2)}</span>
+              <span class="product-card-add"><i class="fas fa-plus"></i></span>
+            </div>`;
+          card.addEventListener("click", () => addToCart(p.id));
+          grid.appendChild(card);
+        });
+      }
+
+      function addToCart(productId) {
+        const product = findProduct(productId);
+        if (!product) return;
+
+        // Out of stock prevention
+        if (product.stock <= 0) {
+          showToast(`"${product.name}" is out of stock!`, "fa-triangle-exclamation");
+          return;
+        }
+
+        const line = pos.cart.find(l => l.productId === productId);
+        if (line) {
+          // Strict cart quantity bound check
+          if (line.qty >= product.stock) {
+            showToast(`Maximum available stock is ${product.stock} units for ${product.name}`, "fa-triangle-exclamation");
+            return;
+          }
+          line.qty += 1;
+        } else {
+          pos.cart.push({ productId, qty: 1 });
+        }
+        renderOrder();
+        showToast(`${product.name} added`, "fa-check-circle");
+      }
+
+      function changeQty(productId, delta) {
+        const line = pos.cart.find(l => l.productId === productId);
+        if (!line) return;
+        const product = findProduct(productId);
+
+        if (delta > 0) {
+          if (product && line.qty >= product.stock) {
+            showToast(`Maximum available stock is ${product.stock} units for ${product.name}`, "fa-triangle-exclamation");
+            return;
+          }
+          line.qty += 1;
+        } else {
+          line.qty -= 1;
+        }
+
+        if (line.qty <= 0) {
+          pos.cart = pos.cart.filter(l => l.productId !== productId);
+        }
+        renderOrder();
+      }
+
+      function removeLine(productId) {
+        pos.cart = pos.cart.filter(l => l.productId !== productId);
+        renderOrder();
+      }
+
+      function cartIsEmpty() { return pos.cart.length === 0; }
+
+      function getSubtotal() {
+        return pos.cart.reduce((sum, l) => {
+          const p = findProduct(l.productId);
+          return sum + (p ? p.price * l.qty : 0);
+        }, 0);
+      }
+
+      function getDiscount(subtotal) { return subtotal * pos.promoRate; }
+      function getTax(taxable) { return taxable * TAX_RATE; }
+      function getTotal() {
+        const s = getSubtotal();
+        const d = getDiscount(s);
+        const t = s - d;
+        return t + getTax(t);
+      }
+
+      function renderOrder() {
+        const container = document.getElementById("pos-order-items");
+        const emptyState = document.getElementById("pos-empty-state");
+        if (!container) return;
+
+        if (cartIsEmpty()) {
+          container.innerHTML = "";
+          if (emptyState) container.appendChild(emptyState);
+        } else {
+          container.innerHTML = "";
+          pos.cart.forEach(line => {
+            const p = findProduct(line.productId);
+            if (!p) return;
+            const row = document.createElement("div");
+            row.className = "order-line-item";
+            row.innerHTML = `
+              <div class="line-item-icon">${p.icon}</div>
+              <div class="line-item-info">
+                <div class="line-item-name">${escapeReceiptText(p.name)}</div>
+                <div class="line-item-price">₱${p.price.toFixed(2)} each (Stock: ${p.stock})</div>
+              </div>
+              <div class="line-item-qty">
+                <button class="qty-btn" data-action="dec" title="Decrease"><i class="fas fa-minus"></i></button>
+                <span class="qty-value">${line.qty}</span>
+                <button class="qty-btn" data-action="inc" title="Increase"><i class="fas fa-plus"></i></button>
+              </div>
+              <div class="line-item-total">₱${(p.price * line.qty).toFixed(2)}</div>
+              <button class="line-item-remove" data-action="remove" title="Remove item"><i class="fas fa-times"></i></button>`;
+            row.querySelector('[data-action="inc"]').addEventListener("click", () => changeQty(p.id, 1));
+            row.querySelector('[data-action="dec"]').addEventListener("click", () => changeQty(p.id, -1));
+            row.querySelector('[data-action="remove"]').addEventListener("click", () => removeLine(p.id));
+            container.appendChild(row);
+          });
+        }
+        renderTotals();
+      }
+
+      function renderTotals() {
+        const subtotal = getSubtotal();
+        const discount = getDiscount(subtotal);
+        const taxable = subtotal - discount;
+        const tax = getTax(taxable);
+        const total = taxable + tax;
+
+        const subtotalEl = document.getElementById("pos-subtotal");
+        const taxEl = document.getElementById("pos-tax");
+        const totalEl = document.getElementById("pos-total");
+        const chargeLabelEl = document.getElementById("pos-charge-label");
+
+        if (subtotalEl) subtotalEl.textContent = formatPeso(subtotal);
+        if (taxEl) taxEl.textContent = formatPeso(tax);
+        if (totalEl) totalEl.textContent = formatPeso(total);
+
+        const discountRow = document.getElementById("pos-discount-row");
+        if (discountRow) {
+          if (pos.promoRate > 0) {
+            discountRow.style.display = "flex";
+            discountRow.querySelector("span:first-child").innerHTML = `<i class="fas fa-tag" style="color:var(--pos-accent);"></i> Discount (${Math.round(pos.promoRate * 100)}%)`;
+            const valEl = document.getElementById("pos-discount-val");
+            if (valEl) valEl.textContent = "-" + formatPeso(discount);
+          } else {
+            discountRow.style.display = "none";
+          }
+        }
+
+        if (chargeLabelEl) chargeLabelEl.textContent = `Charge ${formatPeso(total)}`;
+        calcChange();
+        updateChargeButtonState();
+      }
+
+      function applyPosPromo() {
+        const input = document.getElementById("pos-promo-input");
+        const status = document.getElementById("pos-promo-status");
+        if (!input || !status) return;
+        const code = input.value.trim().toUpperCase();
+        if (!code) {
+          status.textContent = "Enter a promo code first.";
+          status.className = "pos-promo-status error";
+          return;
+        }
+        if (PROMO_CODES[code]) {
+          pos.promoCode = code;
+          pos.promoRate = PROMO_CODES[code];
+          status.textContent = `Applied — ${Math.round(pos.promoRate * 100)}% off subtotal.`;
+          status.className = "pos-promo-status ok";
+        } else {
+          pos.promoCode = null;
+          pos.promoRate = 0;
+          status.textContent = "Invalid promo code.";
+          status.className = "pos-promo-status error";
+        }
+        renderTotals();
+      }
+
+      function selectPayMethod(method) {
+        pos.payMethod = method;
+        document.querySelectorAll(".pay-method-btn").forEach(b => b.classList.toggle("active", b.dataset.method === method));
+        const tenderSection = document.getElementById("pos-cash-tender-section");
+        if (tenderSection) tenderSection.classList.toggle("hidden", method !== "cash");
+        updateChargeButtonState();
+      }
+
+      function setTender(amount) {
+        const input = document.getElementById("pos-tender-input");
+        if (!input) return;
+        const current = parseFloat(input.value) || 0;
+        input.value = (current + amount).toFixed(2);
+        calcChange();
+      }
+
+      function calcChange() {
+        const input = document.getElementById("pos-tender-input");
+        if (!input) return;
+        pos.tendered = parseFloat(input.value) || 0;
+        const total = getTotal();
+        const change = pos.tendered - total;
+        const el = document.getElementById("pos-change-amount");
+        if (el) {
+          el.textContent = formatPeso(Math.max(change, 0));
+          el.classList.toggle("insufficient", change < 0 && pos.tendered > 0);
+        }
+        updateChargeButtonState();
+      }
+
+      function updateChargeButtonState() {
+        const btn = document.getElementById("pos-charge-btn");
+        if (!btn) return;
+        const total = getTotal();
+        let enabled = !cartIsEmpty() && total > 0;
+        if (enabled && pos.payMethod === "cash") {
+          enabled = pos.tendered >= total;
+        }
+        btn.disabled = !enabled;
+      }
+
+      async function fetchNextOrderId() {
+        try {
+          const res = await fetch("api/admin_sales.php?action=list&limit=1");
+          const data = await res.json();
+          if (data.success && Array.isArray(data.sales) && data.sales.length > 0) {
+            const maxId = Math.max(...data.sales.map(s => Number(s.sale_id) || 0));
+            nextOrderId = maxId + 1;
+          } else {
+            nextOrderId = 1;
+          }
+        } catch (e) {
+          nextOrderId = 1;
+        }
+        const orderIdBadge = document.getElementById("order-id-display");
+        if (orderIdBadge) {
+          orderIdBadge.textContent = "Order #BS-" + String(nextOrderId).padStart(4, "0");
+        }
+      }
+
+      async function processCharge() {
+        if (cartIsEmpty()) return;
+        const subtotal = getSubtotal();
+        const discount = getDiscount(subtotal);
+        const taxable = subtotal - discount;
+        const tax = getTax(taxable);
+        const total = taxable + tax;
+
+        if (pos.payMethod === "cash" && pos.tendered < total) {
+          showToast("Insufficient cash tendered", "fa-circle-exclamation");
+          return;
+        }
+
+        const button = document.getElementById("pos-charge-btn");
+        if (button) {
+          button.disabled = true;
+          button.querySelector("span").textContent = "Processing...";
+        }
+
+        try {
+          const payloadItems = pos.cart.map(line => {
+            const product = findProduct(line.productId);
+            return {
+              id: Number(line.productId),
+              qty: line.qty,
+              price: product ? product.price : 0
+            };
+          });
+
+          const activeCashierId = (session && session.user_id) ? session.user_id : 2;
+          const activeCashierName = (session && (session.full_name || session.name || session.username)) ? (session.full_name || session.name || session.username) : "Cashier";
+          const customerId = currentCustomer && currentCustomer.id ? currentCustomer.id : 1;
+
+          const response = await fetch("api/process_sale.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cashier_id: activeCashierId,
+              cashier_name: activeCashierName,
+              customer_id: customerId,
+              subtotal_amount: subtotal,
+              discount_amount: discount,
+              tax_amount: tax,
+              total_amount: total,
+              payment_method: pos.payMethod,
+              cash_received: pos.payMethod === "cash" ? pos.tendered : total,
+              change_amount: pos.payMethod === "cash" ? Math.max(pos.tendered - total, 0) : 0,
+              items: payloadItems
+            })
+          });
+
+          if (!response.ok) throw new Error(`Sale API returned HTTP ${response.status}`);
+          const data = await response.json();
+          if (!data.success || !data.receipt) throw new Error(data.message || "Transaction could not be completed.");
+
+          // Transaction succeeded: immediately refresh database product catalog so stock numbers update on screen
+          await loadProductsFromDB();
+
+          // Render thermal receipt and show modal
+          renderReceipt(data.receipt);
+          const receiptOverlay = document.getElementById("receipt-modal-overlay");
+          if (receiptOverlay) receiptOverlay.classList.add("show");
+
+          // Reset order and state
+          resetOrder();
+          currentCustomer = { id: 1, name: "Walk-in Customer", phone: "", email: "" };
+          renderCustomerBar();
+          fetchNextOrderId();
+          showToast("Sale completed and inventory updated!", "fa-check-circle");
+        } catch (error) {
+          console.error("Failed to process sale:", error);
+          showToast(error.message || "Unable to process sale.", "fa-circle-exclamation");
+          updateChargeButtonState();
+        } finally {
+          updateChargeButtonState();
+          if (!cartIsEmpty()) {
+            const btnSpan = document.getElementById("pos-charge-btn")?.querySelector("span");
+            if (btnSpan) btnSpan.textContent = `Charge ${formatPeso(getTotal())}`;
+          }
+        }
+      }
+
+      function escapeReceiptText(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function formatReceiptDate(value) {
+        const date = value ? new Date(String(value).replace(" ", "T")) : new Date();
+        return Number.isNaN(date.getTime())
+          ? String(value || "")
+          : `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      }
+
+      function renderReceipt(receipt) {
+        const body = document.getElementById("receipt-body");
+        if (!body) return;
+        let itemsHtml = "";
+        (receipt.items || []).forEach(item => {
+          itemsHtml += `<div class="receipt-line"><span>${escapeReceiptText(item.name || item.product_name)} × ${Number(item.quantity)} @ ₱${Number(item.unit_price).toFixed(2)}</span><span>₱${Number(item.subtotal).toFixed(2)}</span></div>`;
+        });
+
+        const customerDisplay = (receipt.customer_name && receipt.customer_name !== 'Walk-in Customer')
+          ? `<br>Customer: ${escapeReceiptText(receipt.customer_name)}${receipt.customer_phone ? ' (' + escapeReceiptText(receipt.customer_phone) + ')' : ''}`
+          : '<br>Customer: Walk-in Customer';
+
+        body.innerHTML = `
+          <div class="receipt-store-name">${escapeReceiptText(receipt.store_name || "Berning Store")}</div>
+          <div class="receipt-store-subtitle">${escapeReceiptText(receipt.store_address || "Poblacion, Grocery St., Philippines")} • Tel: ${escapeReceiptText(receipt.store_contact || "+63 912 345 6789")}</div>
+          <div class="receipt-meta">
+            Receipt: <strong>${escapeReceiptText(receipt.order_no || `BS-${String(receipt.sale_id).padStart(5, "0")}`)}</strong><br>
+            ${escapeReceiptText(formatReceiptDate(receipt.sale_date))}<br>
+            Cashier: ${escapeReceiptText(receipt.cashier_name || "Staff")}
+            ${customerDisplay}
+          </div>
+          <div class="receipt-divider"></div>
+          ${itemsHtml}
+          <div class="receipt-divider"></div>
+          <div class="receipt-line"><span>Subtotal</span><span>₱${Number(receipt.subtotal || receipt.subtotal_amount || 0).toFixed(2)}</span></div>
+          ${Number(receipt.discount || receipt.discount_amount || 0) > 0 ? `<div class="receipt-line"><span>Discount</span><span>-₱${Number(receipt.discount || receipt.discount_amount || 0).toFixed(2)}</span></div>` : ""}
+          <div class="receipt-line"><span>VAT (12%)</span><span>₱${Number(receipt.tax || receipt.tax_amount || 0).toFixed(2)}</span></div>
+          <div class="receipt-divider"></div>
+          <div class="receipt-total-line"><span>TOTAL</span><span>₱${Number(receipt.total_amount).toFixed(2)}</span></div>
+          <div class="receipt-line"><span>Payment method</span><span style="text-transform:capitalize;">${escapeReceiptText(receipt.payment_method)}</span></div>
+          ${String(receipt.payment_method).toLowerCase() === "cash" ? `<div class="receipt-line"><span>Cash tendered</span><span>₱${Number(receipt.cash_received).toFixed(2)}</span></div>
+          <div class="receipt-line"><span>Change</span><span>₱${Number(receipt.change_amount).toFixed(2)}</span></div>` : ""}
+          <div class="receipt-barcode-repr">*${escapeReceiptText(receipt.order_no || `BS-${String(receipt.sale_id).padStart(5, "0")}`)}*</div>
+          <div class="receipt-meta" style="margin-top:6px;margin-bottom:0;">Thank you for shopping at Berning Store!</div>`;
+      }
+
+      function printReceipt() {
+        const overlay = document.getElementById("receipt-modal-overlay");
+        if (!overlay || !overlay.classList.contains("show")) return;
+        window.print();
+      }
+
+      function closeReceiptModal() {
+        const overlay = document.getElementById("receipt-modal-overlay");
+        if (overlay) overlay.classList.remove("show");
+      }
+
+      function startNewOrder() {
+        closeReceiptModal();
+        resetOrder();
+        fetchNextOrderId();
+        showScreen("pos");
+      }
+
+      function resetOrder() {
+        pos.cart = [];
+        pos.promoCode = null;
+        pos.promoRate = 0;
+        pos.payMethod = "cash";
+        pos.tendered = 0;
+        const promoInput = document.getElementById("pos-promo-input");
+        const promoStatus = document.getElementById("pos-promo-status");
+        const tenderInput = document.getElementById("pos-tender-input");
+        if (promoInput) promoInput.value = "";
+        if (promoStatus) {
+          promoStatus.textContent = "";
+          promoStatus.className = "pos-promo-status";
+        }
+        if (tenderInput) tenderInput.value = "";
+        if (pos.initialized) {
+          selectPayMethod("cash");
+          renderOrder();
+        }
+      }
+
+      function voidOrder() {
+        if (cartIsEmpty()) {
+          showToast("Order is already empty", "fa-info-circle");
+          return;
+        }
+        const modal = document.getElementById("void-modal-overlay");
+        if (modal) modal.classList.add("show");
+      }
+
+      function closeVoidModal() {
+        const modal = document.getElementById("void-modal-overlay");
+        if (modal) modal.classList.remove("show");
+      }
+
+      function confirmVoid() {
+        resetOrder();
+        closeVoidModal();
+        showToast("Order voided", "fa-trash-alt");
+      }
+
+      let toastTimer = null;
+      function showToast(msg, icon) {
+        const toast = document.getElementById("pos-toast");
+        if (!toast) return;
+        const text = document.getElementById("pos-toast-msg");
+        if (text) text.textContent = msg;
+        const iconEl = toast.querySelector("i");
+        if (iconEl) iconEl.className = `fas ${icon || "fa-check-circle"}`;
+        toast.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
+      }
+
+      /* ── DASHBOARD REAL-TIME DATA LOADER ── */
+      async function loadDashboardStats() {
+        try {
+          const res = await fetch("api/cashier_stats.php");
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message || "Failed to load cashier statistics.");
+
+          const s = data.stats;
+          document.getElementById("stat-today-sales").textContent = formatPeso(s.total_revenue_today);
+          document.getElementById("stat-today-personal").textContent = `${formatPeso(s.cashier_revenue_today)} from your register`;
+          document.getElementById("stat-completed-count").textContent = Number(s.total_transactions_today).toLocaleString();
+          document.getElementById("stat-personal-count").textContent = `${Number(s.cashier_transactions_today).toLocaleString()} processed by you today`;
+          document.getElementById("stat-available-products").textContent = Number(s.available_products).toLocaleString();
+          document.getElementById("stat-low-stock-count").textContent = Number(s.low_stock_count).toLocaleString();
+          document.getElementById("stat-out-stock-sub").textContent = `${Number(s.out_of_stock_count)} out of stock`;
+          document.getElementById("dash-low-stock-badge").textContent = `${Number(s.low_stock_count)} items`;
+
+          // Render Recent Sales table
+          const salesTbody = document.getElementById("dash-recent-sales-tbody");
+          if (salesTbody) {
+            if (!data.recent_sales || data.recent_sales.length === 0) {
+              salesTbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--ink-faint);">No transactions recorded today yet.</td></tr>`;
+            } else {
+              salesTbody.innerHTML = data.recent_sales.map(sale => {
+                const dateObj = new Date(String(sale.sale_date).replace(" ", "T"));
+                const timeStr = Number.isNaN(dateObj.getTime())
+                  ? String(sale.sale_date)
+                  : dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+                const payBadgeClass = sale.payment_method.toLowerCase() === "cash" ? "badge-success" : (sale.payment_method.toLowerCase() === "gcash" ? "badge-info" : "badge-warning");
+
+                return `
+                  <tr>
+                    <td><strong>${escapeReceiptText(sale.order_no)}</strong></td>
+                    <td>${escapeReceiptText(timeStr)}</td>
+                    <td>${escapeReceiptText(sale.customer_name)}</td>
+                    <td>${sale.items_count} item(s)</td>
+                    <td><strong>${formatPeso(sale.total_amount)}</strong></td>
+                    <td><span class="badge ${payBadgeClass}">${escapeReceiptText(sale.payment_method.toUpperCase())}</span></td>
+                    <td>
+                      <button class="btn-table-action" onclick="reprintReceipt(${sale.sale_id})" title="Print or view receipt">
+                        <i class="fas fa-receipt"></i> Receipt
+                      </button>
+                    </td>
+                  </tr>`;
+              }).join("");
+            }
+          }
+
+          // Render Low-Stock Items
+          const lowStockList = document.getElementById("dash-low-stock-list");
+          if (lowStockList) {
+            if (!data.low_stock_items || data.low_stock_items.length === 0) {
+              lowStockList.innerHTML = `<div style="text-align:center;padding:32px 20px;color:var(--brand);"><i class="fas fa-circle-check" style="font-size:26px;display:block;margin-bottom:8px;"></i>All products are well-stocked!</div>`;
+            } else {
+              lowStockList.innerHTML = data.low_stock_items.map(item => {
+                const isOut = Number(item.stock_quantity) <= 0;
+                return `
+                  <div class="low-stock-row">
+                    <div class="low-stock-info">
+                      <div class="low-stock-name">${escapeReceiptText(item.product_name)}</div>
+                      <div class="low-stock-meta">${escapeReceiptText(item.category_name)} • Reorder level: ${item.reorder_level}</div>
+                    </div>
+                    <div>
+                      <span class="badge ${isOut ? 'badge-danger' : 'badge-warning'}">
+                        ${isOut ? 'Out of stock' : item.stock_quantity + ' units left'}
+                      </span>
+                    </div>
+                  </div>`;
+              }).join("");
+            }
+          }
+        } catch (err) {
+          console.error("Dashboard stats error:", err);
+        }
+      }
+
+      /* ── TRANSACTION HISTORY LEDGER LOADER ── */
+      function onHistoryFilterChange() {
+        clearTimeout(historyDebounceTimer);
+        historyDebounceTimer = setTimeout(() => {
+          loadTransactionHistory();
+        }, 250);
+      }
+
+      async function loadTransactionHistory() {
+        const search = document.getElementById("history-search-input")?.value.trim() || "";
+        const dateFilter = document.getElementById("history-date-filter")?.value || "all";
+        const payMethod = document.getElementById("history-payment-filter")?.value || "all";
+
+        const tbody = document.getElementById("history-sales-tbody");
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--ink-faint);"><i class="fas fa-spinner fa-spin"></i> Loading transactions from database...</td></tr>`;
+        }
+
+        try {
+          const params = new URLSearchParams({
+            action: "list",
+            search: search,
+            date_filter: dateFilter,
+            payment_method: payMethod
+          });
+
+          const res = await fetch("api/admin_sales.php?" + params.toString());
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message || "Failed to load transaction history.");
+
+          const badge = document.getElementById("history-count-badge");
+          if (badge) badge.textContent = `${data.count || 0} records`;
+
+          if (!tbody) return;
+          if (!data.sales || data.sales.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--ink-faint);">No transactions match your search and filter criteria.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = data.sales.map(s => {
+            const payBadgeClass = String(s.payment_method).toLowerCase() === "cash" ? "badge-success" : (String(s.payment_method).toLowerCase() === "gcash" ? "badge-info" : "badge-warning");
+            const orderNo = `BS-${String(s.sale_id).padStart(5, "0")}`;
+
+            return `
+              <tr>
+                <td><strong>${orderNo}</strong></td>
+                <td>${escapeReceiptText(s.sale_date)}</td>
+                <td>${escapeReceiptText(s.cashier_name)}</td>
+                <td>${escapeReceiptText(s.customer_name)}</td>
+                <td>${s.total_items_count} item(s) (${s.total_units_sold} units)</td>
+                <td>${formatPeso(s.subtotal_amount)}</td>
+                <td><strong>${formatPeso(s.total_amount)}</strong></td>
+                <td><span class="badge ${payBadgeClass}">${escapeReceiptText(s.payment_method)}</span></td>
+                <td>
+                  <div style="display:inline-flex; gap:6px;">
+                    <button class="btn-table-action" onclick="reprintReceipt(${s.sale_id})" title="Print Receipt">
+                      <i class="fas fa-print"></i> Receipt
+                    </button>
+                    <button class="btn-table-action" onclick="openTransactionDetails(${s.sale_id})" title="View Details">
+                      <i class="fas fa-eye"></i> Details
+                    </button>
+                  </div>
+                </td>
+              </tr>`;
+          }).join("");
+        } catch (err) {
+          console.error("History loading error:", err);
+          if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--danger);">Error loading transactions: ${escapeReceiptText(err.message)}</td></tr>`;
+          }
+        }
+      }
+
+      async function openTransactionDetails(saleId) {
+        const modal = document.getElementById("transaction-details-modal");
+        const content = document.getElementById("td-modal-content");
+        const title = document.getElementById("td-modal-title");
+        const reprintBtn = document.getElementById("td-reprint-btn");
+
+        if (title) title.innerHTML = `<i class="fas fa-file-invoice" style="color:var(--brand);"></i> Transaction Details: BS-${String(saleId).padStart(5, "0")}`;
+        if (content) content.innerHTML = `<div style="text-align:center;padding:32px;color:var(--ink-faint);"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Loading sale details from database...</p></div>`;
+        if (modal) modal.classList.add("show");
+
+        if (reprintBtn) {
+          reprintBtn.onclick = () => {
+            closeTransactionDetailsModal();
+            reprintReceipt(saleId);
+          };
+        }
+
+        try {
+          const res = await fetch(`api/admin_sales.php?action=details&id=${saleId}`);
+          const data = await res.json();
+          if (!data.success || !data.sale) throw new Error(data.message || "Sale details not found.");
+
+          const s = data.sale;
+          const items = data.items || [];
+
+          let itemsTable = items.map(it => `
+            <tr>
+              <td>${escapeReceiptText(it.product_name)}</td>
+              <td>${escapeReceiptText(it.barcode || '—')}</td>
+              <td>${escapeReceiptText(it.category_name || 'General')}</td>
+              <td>${formatPeso(it.unit_price)}</td>
+              <td><strong>${it.quantity}</strong></td>
+              <td><strong>${formatPeso(it.subtotal)}</strong></td>
+            </tr>
+          `).join("");
+
+          content.innerHTML = `
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:20px; background:var(--surface-alt); padding:16px; border-radius:var(--radius-md);">
+              <div><span style="font-size:11px; color:var(--ink-faint); text-transform:uppercase; font-weight:700;">Order ID</span><div style="font-weight:700; font-size:14px;">BS-${String(s.sale_id).padStart(5, "0")}</div></div>
+              <div><span style="font-size:11px; color:var(--ink-faint); text-transform:uppercase; font-weight:700;">Date & Time</span><div style="font-weight:700; font-size:14px;">${escapeReceiptText(s.sale_date)}</div></div>
+              <div><span style="font-size:11px; color:var(--ink-faint); text-transform:uppercase; font-weight:700;">Cashier</span><div style="font-weight:700; font-size:14px;">${escapeReceiptText(s.cashier_name)}</div></div>
+              <div><span style="font-size:11px; color:var(--ink-faint); text-transform:uppercase; font-weight:700;">Customer</span><div style="font-weight:700; font-size:14px;">${escapeReceiptText(s.customer_name)}</div></div>
+              <div><span style="font-size:11px; color:var(--ink-faint); text-transform:uppercase; font-weight:700;">Payment Method</span><div style="font-weight:700; font-size:14px; text-transform:capitalize;">${escapeReceiptText(s.payment_method)}</div></div>
+              <div><span style="font-size:11px; color:var(--ink-faint); text-transform:uppercase; font-weight:700;">Total Amount</span><div style="font-weight:800; font-size:16px; color:var(--brand);">${formatPeso(s.total_amount)}</div></div>
+            </div>
+
+            <h4 style="margin:0 0 10px; font-size:14px; color:var(--ink);">Purchased Items (${items.length})</h4>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product Name</th>
+                  <th>Barcode</th>
+                  <th>Category</th>
+                  <th>Unit Price</th>
+                  <th>Qty</th>
+                  <th>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsTable}
+              </tbody>
+            </table>
+
+            <div style="margin-top:18px; display:flex; justify-content:flex-end;">
+              <div style="min-width:240px; font-size:13px; display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span><span>${formatPeso(s.subtotal_amount)}</span></div>
+                ${Number(s.discount_amount) > 0 ? `<div style="display:flex; justify-content:space-between; color:var(--pos-accent);"><span>Discount:</span><span>-${formatPeso(s.discount_amount)}</span></div>` : ''}
+                <div style="display:flex; justify-content:space-between;"><span>VAT (12%):</span><span>${formatPeso(s.tax_amount)}</span></div>
+                <div style="display:flex; justify-content:space-between; font-weight:800; font-size:15px; border-top:1px dashed var(--border-strong); padding-top:6px;"><span>Total:</span><span>${formatPeso(s.total_amount)}</span></div>
+                ${String(s.payment_method).toLowerCase() === 'cash' ? `
+                  <div style="display:flex; justify-content:space-between;"><span>Cash Tendered:</span><span>${formatPeso(s.cash_received)}</span></div>
+                  <div style="display:flex; justify-content:space-between;"><span>Change:</span><span>${formatPeso(s.change_amount)}</span></div>
+                ` : ''}
+              </div>
+            </div>`;
+        } catch (err) {
+          if (content) content.innerHTML = `<div style="text-align:center;padding:24px;color:var(--danger);">${escapeReceiptText(err.message)}</div>`;
+        }
+      }
+
+      function closeTransactionDetailsModal() {
+        const modal = document.getElementById("transaction-details-modal");
+        if (modal) modal.classList.remove("show");
+      }
+
+      async function reprintReceipt(saleId) {
+        try {
+          const res = await fetch(`api/admin_sales.php?action=details&id=${saleId}`);
+          const data = await res.json();
+          if (!data.success || !data.sale) throw new Error(data.message || "Sale details not found.");
+
+          const s = data.sale;
+          const items = (data.items || []).map(it => ({
+            product_id: it.product_id,
+            name: it.product_name,
+            quantity: it.quantity,
+            unit_price: it.unit_price,
+            subtotal: it.subtotal
+          }));
+
+          const receipt = {
+            store_name: 'Berning Store',
+            store_address: 'Poblacion, Grocery St., Philippines',
+            store_contact: '+63 912 345 6789',
+            sale_id: s.sale_id,
+            order_no: `BS-${String(s.sale_id).padStart(5, '0')}`,
+            sale_date: s.sale_date,
+            cashier_name: s.cashier_name,
+            customer_name: s.customer_name || 'Walk-in Customer',
+            customer_phone: s.customer_phone || '',
+            subtotal: s.subtotal_amount,
+            discount: s.discount_amount,
+            tax: s.tax_amount,
+            total_amount: s.total_amount,
+            payment_method: String(s.payment_method).toLowerCase(),
+            cash_received: s.cash_received,
+            change_amount: s.change_amount,
+            items: items
+          };
+
+          renderReceipt(receipt);
+          const modal = document.getElementById("receipt-modal-overlay");
+          if (modal) modal.classList.add("show");
+        } catch (err) {
+          console.error("Receipt reprint error:", err);
+          showToast(err.message || "Could not retrieve receipt.", "fa-circle-exclamation");
+        }
+      }
+
+      /* ── CUSTOMER MANAGEMENT & DIRECTORY ── */
+      function renderCustomerBar() {
+        const nameEl = document.getElementById("pos-customer-name");
+        if (nameEl) {
+          nameEl.textContent = currentCustomer.name || "Walk-in Customer";
+        }
+      }
+
+      async function loadCustomersList() {
+        const tbody = document.getElementById("customers-list-tbody");
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--ink-faint);"><i class="fas fa-spinner fa-spin"></i> Loading customers from database...</td></tr>`;
+        }
+
+        try {
+          const res = await fetch("api/admin_customers.php?action=list");
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message || "Failed to load customers.");
+
+          cachedCustomers = data.customers || [];
+          const countBadge = document.getElementById("customers-count-badge");
+          if (countBadge) countBadge.textContent = `${cachedCustomers.length} customers`;
+
+          filterCustomersTable();
+        } catch (err) {
+          console.error("Customers list error:", err);
+          if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--danger);">Error loading customers: ${escapeReceiptText(err.message)}</td></tr>`;
+          }
+        }
+      }
+
+      function filterCustomersTable() {
+        const query = document.getElementById("customers-search-input")?.value.trim().toLowerCase() || "";
+        const tbody = document.getElementById("customers-list-tbody");
+        if (!tbody) return;
+
+        const filtered = cachedCustomers.filter(c => {
+          return !query ||
+            (c.customer_name && c.customer_name.toLowerCase().includes(query)) ||
+            (c.phone && c.phone.toLowerCase().includes(query)) ||
+            (c.email && c.email.toLowerCase().includes(query)) ||
+            (c.address && c.address.toLowerCase().includes(query));
+        });
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--ink-faint);">No customers found matching "${escapeReceiptText(query)}".</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(c => {
+          const lastPurchase = c.last_purchase_date
+            ? formatReceiptDate(c.last_purchase_date)
+            : '<span style="color:var(--ink-faint);">No purchases yet</span>';
+
+          return `
+            <tr>
+              <td>#${c.customer_id}</td>
+              <td><strong>${escapeReceiptText(c.customer_name)}</strong></td>
+              <td>${escapeReceiptText(c.phone || '—')}</td>
+              <td>${escapeReceiptText(c.email || '—')}</td>
+              <td>${escapeReceiptText(c.address || '—')}</td>
+              <td>${Number(c.total_orders || 0)} orders</td>
+              <td><strong>${formatPeso(c.total_spent)}</strong></td>
+              <td>${lastPurchase}</td>
+              <td>
+                <button class="btn-table-action" onclick="selectCustomerForPos(${c.customer_id}, '${escapeReceiptText(c.customer_name)}', '${escapeReceiptText(c.phone)}')">
+                  <i class="fas fa-cart-plus"></i> Open in POS
+                </button>
+              </td>
+            </tr>`;
+        }).join("");
+      }
+
+      function selectCustomerForPos(id, name, phone) {
+        currentCustomer = { id: Number(id), name, phone: phone || "" };
+        renderCustomerBar();
+        showScreen("pos");
+        showToast(`Customer "${name}" selected for order`, "fa-user-check");
+      }
+
+      async function openCustomerSelectModal() {
+        const modal = document.getElementById("customer-select-modal");
+        if (modal) modal.classList.add("show");
+        const searchInput = document.getElementById("cust-modal-search");
+        if (searchInput) {
+          searchInput.value = "";
+          searchInput.focus();
+        }
+
+        if (cachedCustomers.length === 0) {
+          try {
+            const res = await fetch("api/admin_customers.php?action=list");
+            const data = await res.json();
+            if (data.success) cachedCustomers = data.customers || [];
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        filterCustomerSelectModal();
+      }
+
+      function closeCustomerSelectModal() {
+        const modal = document.getElementById("customer-select-modal");
+        if (modal) modal.classList.remove("show");
+      }
+
+      function filterCustomerSelectModal() {
+        const query = document.getElementById("cust-modal-search")?.value.trim().toLowerCase() || "";
+        const list = document.getElementById("customer-options-list");
+        if (!list) return;
+
+        let html = `
+          <!-- Walk-in Customer (Default) Option -->
+          <div class="customer-option-item" style="border-left: 3px solid var(--brand);">
+            <div>
+              <div style="font-weight:700; font-size:13.5px; color:var(--brand-dark);"><i class="fas fa-user-group" style="margin-right:6px;"></i> Walk-in Customer <span class="badge badge-success" style="margin-left:6px;">Default</span></div>
+              <div style="font-size:11.5px; color:var(--ink-faint);">General walk-in buyer (no record required)</div>
+            </div>
+            <button type="button" class="btn-select-cust" onclick="selectCustomer(1, 'Walk-in Customer', '')">Select</button>
+          </div>
+        `;
+
+        const filtered = cachedCustomers.filter(c => {
+          if (c.customer_id === 1) return false;
+          return !query ||
+            (c.customer_name && c.customer_name.toLowerCase().includes(query)) ||
+            (c.phone && c.phone.toLowerCase().includes(query));
+        });
+
+        filtered.forEach(c => {
+          html += `
+            <div class="customer-option-item">
+              <div>
+                <div style="font-weight:700; font-size:13.5px; color:var(--ink);">${escapeReceiptText(c.customer_name)}</div>
+                <div style="font-size:11.5px; color:var(--ink-faint);">Tel: ${escapeReceiptText(c.phone || 'None')} • ${c.total_orders || 0} order(s) • Spent: ${formatPeso(c.total_spent)}</div>
+              </div>
+              <button type="button" class="btn-select-cust" onclick="selectCustomer(${c.customer_id}, '${escapeReceiptText(c.customer_name)}', '${escapeReceiptText(c.phone)}')">Select</button>
+            </div>
+          `;
+        });
+
+        if (filtered.length === 0 && query) {
+          html += `<div style="text-align:center;padding:24px;color:var(--ink-faint);">No customer matches "${escapeReceiptText(query)}". You can click "+ Add New" to register this customer.</div>`;
+        }
+
+        list.innerHTML = html;
+      }
+
+      function selectCustomer(id, name, phone) {
+        currentCustomer = { id: Number(id), name, phone: phone || "" };
+        renderCustomerBar();
+        closeCustomerSelectModal();
+        showToast(`Customer: ${name}`, "fa-user-check");
+      }
+
+      function openAddCustomerModal() {
+        const modal = document.getElementById("add-customer-modal");
+        const form = document.getElementById("add-customer-form");
+        if (form) form.reset();
+        if (modal) modal.classList.add("show");
+      }
+
+      function closeAddCustomerModal() {
+        const modal = document.getElementById("add-customer-modal");
+        if (modal) modal.classList.remove("show");
+      }
+
+      async function handleSaveCustomer(event) {
+        event.preventDefault();
+        const nameInput = document.getElementById("new-cust-name");
+        const phoneInput = document.getElementById("new-cust-phone");
+        const emailInput = document.getElementById("new-cust-email");
+        const addrInput = document.getElementById("new-cust-address");
+        const btn = document.getElementById("save-cust-btn");
+
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const email = emailInput.value.trim();
+        const address = addrInput.value.trim();
+
+        if (!name) {
+          showToast("Customer name is required", "fa-circle-exclamation");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Saving...`;
+
+        try {
+          const res = await fetch("api/admin_customers.php?action=add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              customer_name: name,
+              phone: phone,
+              email: email,
+              address: address,
+              status: "active"
+            })
+          });
+
+          const data = await res.json();
+          if (!data.success) throw new Error(data.message || "Failed to add customer.");
+
+          closeAddCustomerModal();
+          closeCustomerSelectModal();
+
+          // Auto-select new customer for POS
+          selectCustomer(data.customer_id, name, phone);
+
+          // Refresh cached list
+          loadCustomersList();
+          showToast(`Customer "${name}" created successfully!`, "fa-user-check");
+        } catch (err) {
+          console.error("Save customer error:", err);
+          showToast(err.message || "Could not save customer.", "fa-circle-exclamation");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fas fa-save"></i> Save Customer`;
+        }
+      }
+
+      function bindGlobalEvents() {
+        const searchInput = document.getElementById("pos-search-input");
+        if (searchInput) {
+          searchInput.addEventListener("input", e => {
+            pos.searchTerm = e.target.value;
+            renderProducts();
+          });
+        }
+
+        const barcodeInput = document.getElementById("pos-barcode-input");
+        const barcodeGroup = document.getElementById("pos-barcode-group");
+        if (barcodeInput && barcodeGroup) {
+          barcodeInput.addEventListener("focus", () => barcodeGroup.classList.add("focused"));
+          barcodeInput.addEventListener("blur", () => barcodeGroup.classList.remove("focused"));
+          barcodeInput.addEventListener("keydown", e => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleBarcodeScan(barcodeInput.value.trim());
+              barcodeInput.value = "";
+            }
+          });
+        }
+
+        document.addEventListener("keydown", e => {
+          if (document.getElementById("view-pos")?.classList.contains("active")) {
+            if (e.ctrlKey && e.key.toLowerCase() === "b" && barcodeInput) {
+              e.preventDefault();
+              barcodeInput.focus();
+            }
+            if (e.ctrlKey && e.key.toLowerCase() === "f" && searchInput) {
+              e.preventDefault();
+              searchInput.focus();
+            }
+          }
+        });
+
+        const logoutBtn = document.getElementById("cashier-logout-btn");
+        if (logoutBtn) logoutBtn.addEventListener("click", logout);
+      }
+
+      async function handleBarcodeScan(code) {
+        const statusEl = document.getElementById("barcode-status");
+        if (!code) return;
+
+        /* First check the locally-loaded catalog (fast path) */
+        let product = PRODUCTS.find(p => p.barcode === code);
+
+        /* If not found locally, query the database API in case catalog is stale */
+        if (!product) {
+          try {
+            const res = await fetch("api/get_product_by_barcode.php?barcode=" + encodeURIComponent(code));
+            const data = await res.json();
+            if (data.success && data.product) {
+              product = {
+                id: String(data.product.id),
+                barcode: data.product.barcode,
+                name: data.product.name,
+                category: data.product.category_name || "General",
+                price: Number(data.product.price) || 0,
+                icon: CATEGORY_ICONS[data.product.category_name] || "📦",
+                stock: Number(data.product.stock) || 0,
+              };
+              if (!PRODUCTS.find(p => String(p.id) === product.id)) {
+                PRODUCTS.push(product);
+                renderProducts();
+              }
+            }
+          } catch (err) {
+            console.error("Barcode API lookup failed:", err);
+          }
+        }
+
+        if (product && product.stock > 0) {
+          addToCart(product.id);
+          if (statusEl) {
+            statusEl.textContent = `Scanned: ${product.name}`;
+            statusEl.className = "barcode-status show ok";
+          }
+        } else {
+          if (statusEl) {
+            statusEl.textContent = product ? "Out of stock" : "Unknown barcode";
+            statusEl.className = "barcode-status show error";
+          }
+        }
+        if (statusEl) setTimeout(() => statusEl.classList.remove("show"), 1600);
+      }
+
+      /* Expose functions used by inline onclick= attributes */
+      window.showScreen = showScreen;
+      window.enterPos = enterPos;
+      window.applyPosPromo = applyPosPromo;
+      window.selectPayMethod = selectPayMethod;
+      window.setTender = setTender;
+      window.calcChange = calcChange;
+      window.processCharge = processCharge;
+      window.printReceipt = printReceipt;
+      window.closeReceiptModal = closeReceiptModal;
+      window.startNewOrder = startNewOrder;
+      window.voidOrder = voidOrder;
+      window.closeVoidModal = closeVoidModal;
+      window.confirmVoid = confirmVoid;
+      window.logout = logout;
+      window.loadDashboardStats = loadDashboardStats;
+      window.loadTransactionHistory = loadTransactionHistory;
+      window.onHistoryFilterChange = onHistoryFilterChange;
+      window.openTransactionDetails = openTransactionDetails;
+      window.closeTransactionDetailsModal = closeTransactionDetailsModal;
+      window.reprintReceipt = reprintReceipt;
+      window.loadCustomersList = loadCustomersList;
+      window.filterCustomersTable = filterCustomersTable;
+      window.selectCustomerForPos = selectCustomerForPos;
+      window.openCustomerSelectModal = openCustomerSelectModal;
+      window.closeCustomerSelectModal = closeCustomerSelectModal;
+      window.filterCustomerSelectModal = filterCustomerSelectModal;
+      window.selectCustomer = selectCustomer;
+      window.openAddCustomerModal = openAddCustomerModal;
+      window.closeAddCustomerModal = closeAddCustomerModal;
+      window.handleSaveCustomer = handleSaveCustomer;
+
+      /* Check if already authenticated as a Cashier */
+      (async function checkExistingCashierSession() {
+        try {
+          const token = localStorage.getItem('bs_session_token');
+          const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+          const res = await fetch('api/login.php?action=check', { headers, credentials: 'include' });
+          const data = await res.json();
+          if (data && data.authenticated && data.user) {
+            if (data.token) localStorage.setItem('bs_session_token', data.token);
+            localStorage.setItem('bs_current_user', JSON.stringify(data.user));
+            const userRole = String(data.user.role || '').trim().toLowerCase();
+            if (userRole === 'owner') {
+              // Owner account: redirect to Owner Management Portal
+              window.location.replace('../admin/'); // admin.html clean URL
+              return;
+            } else if (userRole === 'cashier' || userRole === 'store attendant') {
+              session = {
+                id: data.user.user_id,
+                user_id: data.user.user_id,
+                name: data.user.full_name,
+                full_name: data.user.full_name,
+                username: data.user.username,
+                email: data.user.email || '',
+                role: data.user.role
+              };
+              enterPos();
+              return;
+            }
+          }
+        } catch (err) {
+          // Unauthenticated or network error: redirect to unified login page
+        }
+        window.location.replace("../login/"); // admin_login.html clean URL
+      })();
+    })();
+  </script>
+
+</body>
+
+</html>

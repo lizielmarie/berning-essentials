@@ -1,0 +1,40 @@
+# ==============================================================================
+# BERNING ESSENTIALS — GIT IGNORE CONFIGURATION
+# Protects sensitive credentials, local configs, and SSL certificates
+# ==============================================================================
+
+# Local configuration overrides (Contains private database credentials)
+backend/config.local.php
+config.local.php
+*.local.php
+.env
+.env.*
+!.env.example
+
+# SSL Certificates, Private Keys, and Secrets
+# (Never commit TiDB CA certificates or private keys to version control)
+*.pem
+*.crt
+*.key
+*.cer
+*.pfx
+*.p12
+certs/
+secrets/
+.secrets/
+
+# Development & Test Scratch Files
+scratch/
+_backup_pre_cleanup/
+*.bak
+*.tmp
+*.log
+
+# Operating System & IDE Files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
