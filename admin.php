@@ -1,39 +1,30 @@
 <?php
 /**
- * BERNING STORE — OWNER MANAGEMENT PORTAL (SERVER-SIDE GATEWAY)
- * Strict server-side verification: Only authenticated accounts with role 'Owner'
- * are served the dashboard. All others are redirected appropriately.
+ * BERNING STORE — ROOT GATEWAY FOR OWNER MANAGEMENT PORTAL
  */
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/backend/db.php';
+require_once __DIR__ . '/backend/auth.php';
 
 $user = bs_validate_session($pdo);
 
 if (!$user) {
-    header('Location: ../admin_login.html');
+    header('Location: login/');
     exit;
 }
 
 $userRole = strtolower(trim($user['role'] ?? ''));
 if ($userRole !== 'owner') {
-    header('Location: ../admin_login.html?error=unauthorized');
+    // Access denied for non-owner: preserve session and redirect with error parameter
+    header('Location: login/?error=unauthorized');
     exit;
 }
 
-// Serve the dashboard HTML
-$adminHtmlPath = __DIR__ . '/../admin.html';
-if (!file_exists($adminHtmlPath)) {
-    $adminHtmlPath = __DIR__ . '/admin.html';
-}
-if (!file_exists($adminHtmlPath)) {
-    $adminHtmlPath = __DIR__ . '/../frontend/admin.html';
-}
-
-if (file_exists($adminHtmlPath)) {
-    readfile($adminHtmlPath);
+$adminHtml = file_exists(__DIR__ . '/admin.html') ? __DIR__ . '/admin.html' : __DIR__ . '/frontend/admin.html';
+if (file_exists($adminHtml)) {
+    readfile($adminHtml);
     exit;
 } else {
     http_response_code(404);
-    echo "<h1>Berning Store: Admin Dashboard file (admin.html) not found.</h1>";
+    echo "<h1>Admin Dashboard (admin.html) not found.</h1>";
     exit;
 }
